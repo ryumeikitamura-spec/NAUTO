@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>NAUTO</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #f0f6ff; --surface: #fff; --surface2: #e6f0fb;
+    --border: #c2d8ef; --accent: #163A95; --accent2: #2C73D2;
+    --accent-light: #A4D8F4; --text: #0e1e3d; --text-muted: #6b87a8;
+    --danger: #d93030; --radius: 14px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: 'Noto Sans JP', sans-serif; background: var(--bg); color: var(--text); min-height: 100dvh; }
+
+  /* ヘッダー */
+  .header { padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: var(--accent); z-index: 100; }
+  .header-left { display: flex; flex-direction: column; gap: 3px; }
+  .header-title { font-size: 24px; font-weight: 700; color: #fff; letter-spacing: 3px; line-height: 1; }
+  .header-catch { font-size: 10px; color: rgba(164,216,244,0.8); letter-spacing: 1.8px; text-transform: uppercase; }
+  .header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+  .header-version { font-size: 10px; color: rgba(255,255,255,0.4); font-family: 'DM Mono', monospace; letter-spacing: 1px; }
+  .settings-btn { width: 40px; height: 40px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 20px; flex-shrink: 0; }
+
+  /* ステップ */
+  .steps { display: flex; padding: 12px 20px; gap: 6px; background: var(--surface); border-bottom: 1px solid var(--border); }
+  .step { flex: 1; height: 4px; background: var(--border); border-radius: 2px; transition: background 0.3s; }
+  .step.active { background: var(--accent2); }
+  .step.done { background: var(--accent-light); }
+
+  .content { padding: 20px; display: flex; flex-direction: column; gap: 18px; padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
+  .panel { display: none; flex-direction: column; gap: 18px; }
+  .panel.active { display: flex; }
+
+  .section-title { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .label { font-size: 11px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; }
+  .input-group { display: flex; flex-direction: column; }
+
+  /* ドラム */
+  .drum-row { display: flex; align-items: center; gap: 4px; }
+  .drum-item { display: flex; flex-direction: column; align-items: center; flex: 1; }
+  .drum-sep { font-size: 18px; font-weight: 700; color: var(--text-muted); padding: 0 2px; margin-top: 14px; flex: none; }
+  .drum-select-wrapper { width: 100%; position: relative; background: var(--surface); border: 1.5px solid var(--border); border-radius: 12px; overflow: hidden; height: 56px; }
+  .drum-select-wrapper select { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; font-size: 16px; cursor: pointer; -webkit-appearance: none; border: none; background: transparent; }
+  .drum-face { pointer-events: none; position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+  .drum-face .dunit { font-size: 10px; font-weight: 600; color: var(--text-muted); }
+  .drum-face .dval  { font-size: 22px; font-weight: 700; color: var(--text); line-height: 1; }
+
+  /* テキスト入力 */
+  input[type="text"], textarea, select.styled {
+    background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius);
+    color: var(--text); font-family: 'Noto Sans JP', sans-serif; font-size: 15px;
+    padding: 13px 16px; outline: none; width: 100%; -webkit-appearance: none; transition: border-color 0.2s;
+  }
+  input[type="text"]:focus, textarea:focus, select.styled:focus { border-color: var(--accent2); }
+  textarea { resize: none; line-height: 1.6; }
+  select.styled { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b87a8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; }
+
+  /* 参加者カード */
+  .member-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .member-row { display: flex; align-items: center; padding: 14px 16px; gap: 12px; border-bottom: 1px solid var(--border); }
+  .member-row:last-child { border-bottom: none; }
+  .member-role { font-size: 12px; font-weight: 600; color: var(--text-muted); min-width: 52px; }
+  .member-input { flex: 1; background: transparent; border: none; padding: 0; font-size: 15px; font-family: 'Noto Sans JP', sans-serif; color: var(--text); outline: none; }
+  .member-input::placeholder { color: var(--text-muted); }
+  .member-fixed { flex: 1; font-size: 15px; font-weight: 500; color: var(--accent2); }
+  .member-badge { font-size: 10px; background: rgba(44,115,210,0.1); color: var(--accent2); border: 1px solid rgba(44,115,210,0.3); border-radius: 6px; padding: 2px 8px; font-weight: 700; white-space: nowrap; }
+
+  /* ファイルゾーン */
+  .file-zone { background: var(--surface); border: 2px dashed var(--border); border-radius: var(--radius); padding: 28px 20px; text-align: center; position: relative; cursor: pointer; transition: all 0.2s; }
+  .file-zone.has-file { border-style: solid; border-color: var(--accent2); background: rgba(44,115,210,0.04); }
+  .file-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
+  .file-icon { font-size: 28px; margin-bottom: 6px; }
+  .file-name { font-size: 14px; font-weight: 500; color: var(--accent2); margin-top: 8px; word-break: break-all; }
+  .file-hint { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+  /* タグ */
+  .tag { display: inline-block; font-size: 11px; font-family: 'DM Mono', monospace; padding: 3px 8px; border-radius: 6px; background: var(--surface2); color: var(--text-muted); border: 1px solid var(--border); }
+  .tag.ok  { background: rgba(44,115,210,0.1); color: var(--accent2); border-color: var(--accent2); }
+  .tag.warn{ background: rgba(164,216,244,0.2); color: #1a5fa0; border-color: var(--accent-light); }
+  .tag.bad { background: rgba(217,48,48,0.08); color: var(--danger); border-color: var(--danger); }
+  .api-status { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  /* ボタン */
+  .btn { display: flex; align-items: center; justify-content: center; gap: 8px; border: none; outline: none; cursor: pointer; border-radius: var(--radius); font-family: 'Noto Sans JP', sans-serif; font-weight: 700; font-size: 15px; padding: 14px; width: 100%; -webkit-appearance: none; transition: opacity 0.15s, transform 0.1s; }
+  .btn:active { transform: scale(0.97); opacity: 0.85; }
+  .btn-primary   { background: var(--accent2); color: #fff; }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1.5px solid var(--border); }
+  .btn-ghost     { background: transparent; color: var(--text-muted); font-size: 13px; padding: 10px; }
+  .btn-danger    { background: rgba(217,48,48,0.08); color: var(--danger); border: 1px solid rgba(217,48,48,0.2); font-size: 13px; padding: 8px 12px; width: auto; border-radius: 8px; }
+  .btn-sm        { font-size: 12px; padding: 8px 12px; width: auto; border-radius: 8px; }
+  .btn:disabled  { opacity: 0.35; cursor: not-allowed; }
+
+  /* アクショングリッド */
+  .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .action-grid .btn { font-size: 13px; padding: 13px 8px; }
+
+  /* プログレス */
+  .progress-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+  .progress-bar-bg { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .progress-bar { height: 100%; background: linear-gradient(90deg, var(--accent2), var(--accent-light)); border-radius: 3px; width: 0%; transition: width 0.4s ease; }
+
+  /* 結果 */
+  .result-box { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 18px; font-size: 14px; line-height: 1.85; white-space: pre-wrap; word-break: break-word; max-height: 52dvh; overflow-y: auto; }
+  .result-box.transcript { color: #7a90a8; font-size: 13px; max-height: 26dvh; }
+  .result-edit { background: var(--surface); border: 1.5px solid var(--accent2); border-radius: var(--radius); padding: 18px; font-size: 14px; line-height: 1.85; word-break: break-word; width: 100%; min-height: 300px; max-height: 52dvh; font-family: 'Noto Sans JP', sans-serif; color: var(--text); outline: none; resize: vertical !important; box-sizing: border-box; }
+  .btn-edit-toggle { font-size: 12px; font-weight: 600; padding: 5px 12px; border-radius: 8px; border: 1.5px solid var(--border); background: var(--surface2); color: var(--text-muted); cursor: pointer; white-space: nowrap; }
+  .btn-edit-toggle.active { background: rgba(44,115,210,0.1); color: var(--accent2); border-color: var(--accent2); }
+  .stats-row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  /* エラー・ヒント */
+  .error-box { background: rgba(217,48,48,0.07); border: 1px solid var(--danger); border-radius: var(--radius); padding: 13px 15px; font-size: 13px; color: var(--danger); display: none; line-height: 1.6; }
+  .error-box.visible { display: block; }
+  .divider { height: 1px; background: var(--border); }
+
+  /* モーダル */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(14,30,61,0.55); z-index: 200; backdrop-filter: blur(4px); align-items: flex-end; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--surface); border-radius: 20px 20px 0 0; border-top: 1.5px solid var(--border); padding: 24px 20px calc(28px + env(safe-area-inset-bottom)); width: 100%; max-height: 92dvh; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; animation: slideUp 0.3s ease; }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .modal-title { font-size: 17px; font-weight: 700; }
+  .modal-section { font-size: 13px; font-weight: 700; color: var(--text-muted); letter-spacing: 0.5px; padding-top: 4px; }
+  .modal-divider { height: 1px; background: var(--border); margin: 2px 0; }
+
+  /* テンプレートリスト */
+  .template-list { display: flex; flex-direction: column; gap: 8px; }
+  .template-item { background: var(--surface2); border: 1.5px solid var(--border); border-radius: 12px; padding: 12px 14px; display: flex; align-items: center; gap: 10px; }
+  .template-item-name { flex: 1; font-size: 14px; font-weight: 500; }
+  .template-item-actions { display: flex; gap: 6px; }
+
+  /* テンプレート編集エリア */
+  .template-editor { background: var(--surface2); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+
+  /* バックアップ行 */
+  .backup-row { display: flex; gap: 8px; }
+  .backup-row .btn { flex: 1; }
+
+  /* トースト */
+  .toast { position: fixed; bottom: calc(28px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%) translateY(80px); background: var(--accent); color: #fff; font-weight: 700; font-size: 14px; padding: 12px 24px; border-radius: 100px; transition: transform 0.3s ease; z-index: 300; white-space: nowrap; pointer-events: none; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="header-title">NAUTO</div>
+    <div class="header-catch">Less Writing. More Talking.</div>
+  </div>
+  <div class="header-right">
+    <div class="header-version">v1.6.0</div>
+    <div class="settings-btn" id="settingsBtn">⚙️</div>
+  </div>
+</div>
+
+<div class="steps">
+  <div class="step active" id="step1"></div>
+  <div class="step" id="step2"></div>
+  <div class="step" id="step3"></div>
+</div>
+
+<div class="content">
+
+  <!-- パネル1：入力 -->
+  <div class="panel active" id="panel1">
+
+    <div class="section-title">📅 日付</div>
+    <div class="drum-row" id="dateRow"></div>
+
+    <div class="divider"></div>
+    <div class="section-title">👥 参加者</div>
+    <div class="member-card">
+      <div class="member-row">
+        <div class="member-role">お客様</div>
+        <input class="member-input" id="memberCustomer" type="text" placeholder="会社名・担当者名">
+      </div>
+      <div class="member-row">
+        <div class="member-role">メーカー</div>
+        <input class="member-input" id="memberMaker" type="text" placeholder="メーカー名・担当者名">
+      </div>
+      <div class="member-row">
+        <div class="member-role">自分</div>
+        <div class="member-fixed" id="memberSelf">（設定から登録）</div>
+        <div class="member-badge">固定</div>
+      </div>
+    </div>
+
+    <div class="section-title">💬 議題</div>
+    <div class="member-card">
+      <div class="member-row">
+        <input class="member-input" id="meetingTopic" type="text" placeholder="例：CNC加工機の選定について">
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="section-title">📋 議事録テンプレート</div>
+    <select class="styled" id="templateSelect"></select>
+
+    <div class="divider"></div>
+    <div class="section-title">🎵 音声ファイル</div>
+    <div class="file-zone" id="fileZone">
+      <input type="file" id="audioFile" accept="audio/*,.m4a,.mp3,.wav,.webm,.mp4">
+      <div class="file-icon">🎙</div>
+      <div style="font-size:15px;font-weight:500;">タップしてファイルを選択</div>
+      <div class="file-hint">m4a / mp3 / wav（最大100MB・約3.5時間）</div>
+      <div class="file-name" id="fileName"></div>
+      <div id="fileSize"></div>
+    </div>
+
+    <div class="error-box" id="fileError"></div>
+    <div class="api-status" id="apiStatus"></div>
+
+    <button class="btn btn-primary" id="startBtn" disabled>文字起こしを開始 →</button>
+    <div style="text-align:center;font-size:11px;color:var(--text-muted);padding-top:8px;letter-spacing:0.5px;">© 2026 Arumatik</div>
+  </div>
+
+  <!-- パネル2：処理中 -->
+  <div class="panel" id="panel2">
+    <div class="section-title">⏳ 処理中...</div>
+    <div class="progress-card">
+      <div id="progressLabel" style="font-size:15px;font-weight:500;">送信中...</div>
+      <div class="progress-bar-bg"><div class="progress-bar" id="progressBar"></div></div>
+      <div id="progressSub" style="font-size:13px;color:var(--text-muted);"></div>
+    </div>
+    <div class="error-box" id="processError"></div>
+    <button class="btn btn-secondary" id="backBtn" style="display:none;">← 最初からやり直す</button>
+  </div>
+
+  <!-- パネル3：結果 -->
+  <div class="panel" id="panel3">
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div class="section-title">✅ 議事録</div>
+      <button class="btn-edit-toggle" id="editToggle">✏️ 編集</button>
+    </div>
+
+    <!-- 表示モード -->
+    <div class="result-box" id="minutesResult"></div>
+    <!-- 編集モード -->
+    <textarea class="result-edit" id="minutesEdit" style="display:none;"></textarea>
+
+    <!-- 処理時間・コスト -->
+    <div class="stats-row" id="statsRow"></div>
+
+    <div class="action-grid">
+      <button class="btn btn-primary"   id="copyBtn">📋 コピー</button>
+      <button class="btn btn-secondary" id="mailBtn">📧 メール</button>
+      <button class="btn btn-secondary" id="dlBtn">💾 保存</button>
+      <button class="btn btn-ghost"     id="resetBtn">🔄 最初から</button>
+    </div>
+    <div class="divider"></div>
+    <details>
+      <summary style="font-size:13px;color:var(--text-muted);cursor:pointer;padding:4px 0;">文字起こし原文を見る</summary>
+      <div class="result-box transcript" id="transcriptResult" style="margin-top:10px;"></div>
+    </details>
+  </div>
+
+</div>
+
+<!-- 設定モーダル -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-title">⚙️ 設定</div>
+
+    <!-- 基本設定 -->
+    <div class="modal-section">👤 基本設定</div>
+    <div class="input-group">
+      <div class="label">自分の名前</div>
+      <input type="text" id="settingMyName" placeholder="例：関東物産 May" autocorrect="off">
+    </div>
+    <div style="font-size:12px;color:var(--text-muted);">議事録の参加者欄に自動で表示されます</div>
+
+    <div class="modal-divider"></div>
+
+    <!-- APIキー -->
+    <div class="modal-section">🔑 APIキー</div>
+    <div class="input-group">
+      <div class="label">Groq API Key（文字起こし）</div>
+      <input type="text" id="groqKey" placeholder="gsk_..." autocomplete="off" autocorrect="off" spellcheck="false">
+    </div>
+    <div class="input-group">
+      <div class="label">Anthropic API Key（議事録生成）</div>
+      <input type="text" id="anthropicKey" placeholder="sk-ant-..." autocomplete="off" autocorrect="off" spellcheck="false">
+    </div>
+    <div style="font-size:12px;color:var(--text-muted);background:var(--surface2);border-radius:10px;padding:12px;line-height:1.7;border:1px solid var(--border);">
+      🔒 すべての設定はこのデバイスのみに保存されます
+    </div>
+
+    <button class="btn btn-primary" id="saveSettings">保存する</button>
+
+    <div class="modal-divider"></div>
+
+    <!-- テンプレート管理 -->
+    <div class="modal-section">📋 テンプレート管理</div>
+    <div class="template-list" id="templateList"></div>
+
+    <!-- 新規作成 -->
+    <div class="template-editor" id="templateEditor">
+      <div style="font-size:13px;font-weight:700;color:var(--text);" id="editorTitle">＋ 新しいテンプレートを作成</div>
+      <div class="input-group">
+        <div class="label">テンプレート名</div>
+        <input type="text" id="tplName" placeholder="例：営業商談">
+      </div>
+      <div class="input-group">
+        <div class="label">Claudeへの指示</div>
+        <textarea id="tplPrompt" rows="6" placeholder="例：以下のフォーマットで議事録を作成してください。&#10;&#10;■ 商談サマリー&#10;■ お客様の課題&#10;■ 提案内容&#10;■ 次回アクション"></textarea>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-primary btn-sm" id="saveTplBtn" style="flex:1;">保存</button>
+        <button class="btn btn-secondary btn-sm" id="cancelTplBtn" style="flex:none;width:80px;">キャンセル</button>
+      </div>
+    </div>
+
+    <div class="modal-divider"></div>
+
+    <!-- バックアップ -->
+    <div class="modal-section">💾 バックアップ</div>
+    <div class="backup-row">
+      <button class="btn btn-secondary" id="exportBtn">📤 エクスポート</button>
+      <button class="btn btn-secondary" id="importBtnUI">📥 インポート</button>
+      <input type="file" id="importFile" accept=".json" style="display:none;">
+    </div>
+    <div style="font-size:12px;color:var(--text-muted);line-height:1.6;">
+      エクスポート：設定・テンプレートをJSONで保存（APIキーは含みません）<br>
+      インポート：バックアップJSONを読み込んで復元
+    </div>
+
+    <button class="btn btn-ghost" id="cancelSettings">閉じる</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── 定数 ─────────────────────────────────────
+const MAX_FILE_MB  = 100; // ファイル上限
+const CHUNK_MAX_MB = 23;  // Groq無料枠25MB以内に収まるよう余裕を持たせる
+
+// ─── デフォルトテンプレート ──────────────────────
+const DEFAULT_TEMPLATES = [
+  {
+    id: 'default',
+    name: '📝 通常議事録',
+    prompt: `以下のフォーマットで議事録を作成してください：
+
+【議事録】
+日時：
+参加者：
+議題：
+
+■ 協議内容
+（主なやり取りを箇条書き）
+
+■ 決定事項
+（決まったことを箇条書き。なければ「特になし」）
+
+■ アクションアイテム
+（誰が・何を・いつまでに。なければ「特になし」）
+
+■ 次回予定
+（あれば記載）`
+  },
+  {
+    id: 'sales',
+    name: '💼 営業商談',
+    prompt: `営業商談の議事録として、以下のフォーマットで作成してください：
+
+【商談議事録】
+日時：
+参加者：
+議題：
+
+■ 商談サマリー（3行以内）
+
+■ お客様の課題・ニーズ
+
+■ 提案内容・提示した製品
+
+■ お客様の反応・懸念点
+
+■ 競合・比較検討状況
+
+■ 決定事項
+
+■ 次回アクション（担当・期限）
+
+■ 失注リスク・フォローポイント`
+  },
+  {
+    id: 'internal',
+    name: '🔧 社内打ち合わせ',
+    prompt: `社内打ち合わせの議事録として、以下のフォーマットで作成してください：
+
+【打ち合わせ議事録】
+日時：
+参加者：
+議題：
+
+■ 報告事項
+
+■ 協議内容
+
+■ 決定事項
+
+■ TODO・アクションアイテム
+（担当者名・期限を明記）
+
+■ 次回打ち合わせ予定`
+  }
+];
+
+// ─── 状態 ─────────────────────────────────────
+const state = { file: null, transcript: '', minutes: '' };
+let editingTplId = null;
+
+// ─── localStorage ────────────────────────────
+const LS = {
+  get: k => localStorage.getItem(k) || '',
+  set: (k, v) => { if (v !== undefined && v !== null) localStorage.setItem(k, v); },
+  remove: k => localStorage.removeItem(k),
+};
+const getMyName       = () => LS.get('my_name');
+const getGroqKey      = () => LS.get('groq_key');
+const getAnthropicKey = () => LS.get('anthropic_key');
+
+// ─── テンプレート管理 ────────────────────────
+function getTemplates() {
+  try {
+    const raw = localStorage.getItem('templates');
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  return JSON.parse(JSON.stringify(DEFAULT_TEMPLATES));
+}
+function saveTemplates(tpls) {
+  localStorage.setItem('templates', JSON.stringify(tpls));
+}
+function initTemplates() {
+  if (!localStorage.getItem('templates')) {
+    saveTemplates(DEFAULT_TEMPLATES);
+  }
+}
+
+// ─── テンプレートセレクト更新 ──────────────────
+function updateTemplateSelect() {
+  const sel = document.getElementById('templateSelect');
+  const tpls = getTemplates();
+  const cur = sel.value;
+  sel.innerHTML = '';
+  tpls.forEach(t => {
+    const o = document.createElement('option');
+    o.value = t.id; o.textContent = t.name;
+    if (t.id === cur) o.selected = true;
+    sel.appendChild(o);
+  });
+}
+
+function getSelectedTemplate() {
+  const id = document.getElementById('templateSelect').value;
+  return getTemplates().find(t => t.id === id) || getTemplates()[0];
+}
+
+// ─── テンプレートリスト（設定画面） ─────────────
+function renderTemplateList() {
+  const list = document.getElementById('templateList');
+  const tpls = getTemplates();
+  list.innerHTML = '';
+  tpls.forEach(t => {
+    const item = document.createElement('div');
+    item.className = 'template-item';
+
+    const nameDiv = document.createElement('div');
+    nameDiv.className = 'template-item-name';
+    nameDiv.textContent = t.name; // XSS対策：textContentを使用
+
+    const actionsDiv = document.createElement('div');
+    actionsDiv.className = 'template-item-actions';
+
+    const editBtn = document.createElement('button');
+    editBtn.className = 'btn btn-secondary btn-sm';
+    editBtn.textContent = '編集';
+    editBtn.onclick = () => editTemplate(t.id);
+    actionsDiv.appendChild(editBtn);
+
+    if (!['default','sales','internal'].includes(t.id)) {
+      const delBtn = document.createElement('button');
+      delBtn.className = 'btn btn-danger';
+      delBtn.textContent = '削除';
+      delBtn.onclick = () => deleteTemplate(t.id);
+      actionsDiv.appendChild(delBtn);
+    }
+
+    item.appendChild(nameDiv);
+    item.appendChild(actionsDiv);
+    list.appendChild(item);
+  });
+}
+
+function editTemplate(id) {
+  const tpl = getTemplates().find(t => t.id === id);
+  if (!tpl) return;
+  editingTplId = id;
+  document.getElementById('editorTitle').textContent = '✏️ テンプレートを編集';
+  document.getElementById('tplName').value   = tpl.name;
+  document.getElementById('tplPrompt').value = tpl.prompt;
+  document.getElementById('templateEditor').scrollIntoView({ behavior: 'smooth' });
+}
+
+function deleteTemplate(id) {
+  if (!confirm('このテンプレートを削除しますか？')) return;
+  const tpls = getTemplates().filter(t => t.id !== id);
+  saveTemplates(tpls);
+  renderTemplateList();
+  updateTemplateSelect();
+  showToast('削除しました');
+}
+
+document.getElementById('saveTplBtn').addEventListener('click', () => {
+  const name   = document.getElementById('tplName').value.trim();
+  const prompt = document.getElementById('tplPrompt').value.trim();
+  if (!name || !prompt) { showToast('名前と指示文を入力してください'); return; }
+
+  const tpls    = getTemplates();
+  const isEdit  = !!editingTplId; // resetEditor前に保存
+  if (isEdit) {
+    const idx = tpls.findIndex(t => t.id === editingTplId);
+    if (idx >= 0) { tpls[idx].name = name; tpls[idx].prompt = prompt; }
+  } else {
+    tpls.push({ id: 'tpl_' + Date.now(), name, prompt });
+  }
+  saveTemplates(tpls);
+  resetEditor(); // ←ここでeditingTplId=nullになる
+  renderTemplateList();
+  updateTemplateSelect();
+  showToast(isEdit ? '更新しました' : 'テンプレートを追加しました');
+});
+
+document.getElementById('cancelTplBtn').addEventListener('click', () => {
+  resetEditor(); // resetEditor内でeditingTplId=nullになる
+});
+
+function resetEditor() {
+  editingTplId = null;
+  document.getElementById('editorTitle').textContent = '＋ 新しいテンプレートを作成';
+  document.getElementById('tplName').value   = '';
+  document.getElementById('tplPrompt').value = '';
+}
+
+// ─── バックアップ エクスポート ──────────────────
+document.getElementById('exportBtn').addEventListener('click', () => {
+  const data = {
+    version: '1.3.4',
+    exported_at: new Date().toISOString(),
+    my_name: getMyName(),
+    templates: getTemplates(),
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = 'nauto_backup_' + new Date().toISOString().slice(0,10) + '.json';
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+  showToast('エクスポートしました');
+});
+
+// ─── バックアップ インポート ────────────────────
+document.getElementById('importBtnUI').addEventListener('click', () => {
+  document.getElementById('importFile').click();
+});
+document.getElementById('importFile').addEventListener('change', e => {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (data.my_name)   LS.set('my_name', data.my_name);
+      if (data.templates) saveTemplates(data.templates);
+      updateMemberSelf(); updateApiStatus(); updateStartBtn();
+      renderTemplateList(); updateTemplateSelect();
+      // 設定画面の入力欄も更新
+      document.getElementById('settingMyName').value = getMyName();
+      showToast('インポートしました');
+    } catch(err) {
+      showToast('読み込みに失敗しました');
+    }
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+});
+
+// ─── ドラム式日時 ─────────────────────────────
+let selYear, selMonth, selDay;
+
+function buildDrum(containerId, items, selectedValue, unit) {
+  const container = document.getElementById(containerId);
+  const wrap = document.createElement('div'); wrap.className = 'drum-select-wrapper';
+  const sel  = document.createElement('select');
+  items.forEach(item => {
+    const o = document.createElement('option');
+    o.value = item.value; o.textContent = item.label;
+    if (item.value === selectedValue) o.selected = true;
+    sel.appendChild(o);
+  });
+  const face  = document.createElement('div'); face.className = 'drum-face';
+  const dunit = document.createElement('div'); dunit.className = 'dunit'; dunit.textContent = unit;
+  const dval  = document.createElement('div'); dval.className  = 'dval';  dval.textContent  = selectedValue;
+  face.appendChild(dunit); face.appendChild(dval);
+  wrap.appendChild(sel); wrap.appendChild(face);
+  container.appendChild(wrap);
+  sel.addEventListener('change', () => { dval.textContent = sel.value; });
+  return sel;
+}
+
+function setupDateTime() {
+  const now = new Date();
+  const Y=now.getFullYear(), M=now.getMonth()+1, D=now.getDate();
+  const dateRow = document.getElementById('dateRow'); dateRow.innerHTML = '';
+  const yearItems  = []; for (let y=Y-1;y<=Y+2;y++) yearItems.push({value:String(y),label:String(y)});
+  const monthItems = []; for (let mo=1;mo<=12;mo++) monthItems.push({value:String(mo).padStart(2,'0'),label:String(mo)});
+  const wY=document.createElement('div'); wY.className='drum-item'; wY.id='drumY'; dateRow.appendChild(wY);
+  selYear = buildDrum('drumY', yearItems, String(Y), '年');
+  const s1=document.createElement('div'); s1.className='drum-sep'; s1.textContent='/'; dateRow.appendChild(s1);
+  const wM=document.createElement('div'); wM.className='drum-item'; wM.id='drumM'; dateRow.appendChild(wM);
+  selMonth = buildDrum('drumM', monthItems, String(M).padStart(2,'0'), '月');
+  const s2=document.createElement('div'); s2.className='drum-sep'; s2.textContent='/'; dateRow.appendChild(s2);
+  const wD=document.createElement('div'); wD.className='drum-item'; wD.id='drumD'; dateRow.appendChild(wD);
+
+  // buildDayDrumをローカルに閉じてイベントが多重登録されないようにする
+  function buildDayDrum(keepDay) {
+    const max = new Date(parseInt(selYear.value), parseInt(selMonth.value), 0).getDate();
+    const cur = Math.min(keepDay||D, max);
+    const dayItems = []; for (let d=1;d<=max;d++) dayItems.push({value:String(d).padStart(2,'0'),label:String(d)});
+    document.getElementById('drumD').innerHTML = '';
+    selDay = buildDrum('drumD', dayItems, String(cur).padStart(2,'0'), '日');
+  }
+  buildDayDrum(D);
+
+  // selYear/selMonthは毎回新しい要素なので多重登録にならない
+  selYear.addEventListener('change',  () => buildDayDrum(parseInt(selDay.value)));
+  selMonth.addEventListener('change', () => buildDayDrum(parseInt(selDay.value)));
+}
+
+function getMeetingDatetime() {
+  if (!selYear || !selMonth || !selDay) {
+    const now = new Date();
+    return `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日`;
+  }
+  return `${selYear.value}年${parseInt(selMonth.value)}月${parseInt(selDay.value)}日`;
+}
+
+// ─── 参加者 ──────────────────────────────────
+function updateMemberSelf() {
+  const name=getMyName(), el=document.getElementById('memberSelf');
+  el.textContent = name||'（設定から登録）';
+  el.style.color = name?'var(--accent2)':'var(--text-muted)';
+}
+function getMembersText() {
+  const c=document.getElementById('memberCustomer').value.trim();
+  const mk=document.getElementById('memberMaker').value.trim();
+  const s=getMyName()||'（自分）';
+  const parts=[];
+  if(c) parts.push('お客様：'+c);
+  if(mk) parts.push('メーカー：'+mk);
+  parts.push('自社：'+s);
+  return parts.join('、');
+}
+
+// ─── ステータス ───────────────────────────────
+function updateApiStatus() {
+  const g=getGroqKey(),a=getAnthropicKey(),n=getMyName();
+  document.getElementById('apiStatus').innerHTML=
+    `<span class="tag ${n?'ok':'bad'}">${n?'✓ '+n:'✗ 名前未設定'}</span>`+
+    `<span class="tag ${g?'ok':'bad'}">${g?'✓ Groq':'✗ Groq未設定'}</span>`+
+    `<span class="tag ${a?'ok':'bad'}">${a?'✓ Anthropic':'✗ Anthropic未設定'}</span>`;
+}
+function updateStartBtn() {
+  document.getElementById('startBtn').disabled=!(state.file&&getGroqKey()&&getAnthropicKey());
+}
+
+// ─── UI ──────────────────────────────────────
+function setStep(n) {
+  [1,2,3].forEach(i=>{
+    document.getElementById('step'+i).className='step'+(i<n?' done':i===n?' active':'');
+    document.getElementById('panel'+i).className='panel'+(i===n?' active':'');
+  });
+}
+function setProgress(pct,label,sub) {
+  document.getElementById('progressBar').style.width=pct+'%';
+  document.getElementById('progressLabel').textContent=label;
+  document.getElementById('progressSub').textContent=sub||'';
+}
+function showToast(msg) {
+  const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2200);
+}
+function showError(id,msg){const el=document.getElementById(id);el.textContent=msg;el.classList.add('visible');}
+function clearError(id){document.getElementById(id).classList.remove('visible');}
+
+// ─── モーダル ────────────────────────────────
+function openModal() {
+  document.getElementById('settingMyName').value=getMyName();
+  document.getElementById('groqKey').value=getGroqKey();
+  document.getElementById('anthropicKey').value=getAnthropicKey();
+  renderTemplateList();
+  resetEditor();
+  document.getElementById('modalOverlay').classList.add('open');
+}
+function closeModal(){document.getElementById('modalOverlay').classList.remove('open');}
+document.getElementById('settingsBtn').addEventListener('click',openModal);
+document.getElementById('cancelSettings').addEventListener('click', closeModal);
+document.getElementById('modalOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('modalOverlay')) closeModal();
+});
+document.getElementById('saveSettings').addEventListener('click',()=>{
+  LS.set('my_name',      document.getElementById('settingMyName').value.trim());
+  LS.set('groq_key',     document.getElementById('groqKey').value.trim());
+  LS.set('anthropic_key',document.getElementById('anthropicKey').value.trim());
+  closeModal(); updateMemberSelf(); updateApiStatus(); updateStartBtn();
+  showToast('設定を保存しました');
+});
+
+// ─── ファイル選択 ─────────────────────────────
+document.getElementById('audioFile').addEventListener('change',e=>{
+  const file=e.target.files[0]; if(!file) return;
+  clearError('fileError');
+  const sizeMB=file.size/1024/1024;
+  if(sizeMB>MAX_FILE_MB){
+    showError('fileError','⚠️ '+sizeMB.toFixed(1)+'MBです。100MB以下（約3.5時間）のファイルを選択してください。');
+    state.file=null;
+    document.getElementById('fileZone').classList.remove('has-file');
+    document.getElementById('fileName').textContent='';
+    document.getElementById('fileSize').innerHTML='';
+  } else {
+    state.file=file;
+    document.getElementById('fileZone').classList.add('has-file');
+    document.getElementById('fileName').textContent=file.name;
+    let tag, note;
+    if (sizeMB <= CHUNK_MAX_MB)      { tag='ok';   note='無料枠'; }
+    else if (sizeMB <= MAX_FILE_MB)  { tag='warn'; note='自動分割・無料枠'; }
+    else                             { tag='bad';  note='上限超過'; }
+    document.getElementById('fileSize').innerHTML =
+      `<span class="tag ${tag}" style="margin-top:6px;display:inline-block;">${sizeMB.toFixed(1)} MB ／ ${note}</span>`;
+  }
+  updateStartBtn();
+});
+
+// ─── 疑似アップロード進捗 ────────────────────────
+function startFakeUploadProgress(startPct, targetPct, estimatedSec, labelFn) {
+  const intervalMs = 400;
+  let elapsed = 0;
+  const timer = setInterval(() => {
+    elapsed += intervalMs / 1000;
+    const progress = Math.min(0.95, elapsed / estimatedSec);
+    const eased    = 1 - Math.pow(1 - progress, 2);
+    const pct      = Math.round(startPct + (targetPct - startPct) * eased);
+    document.getElementById('progressBar').style.width = pct + '%';
+    document.getElementById('progressLabel').textContent = labelFn(pct);
+    document.getElementById('progressSub').textContent =
+      `経過 ${Math.round(elapsed)}秒 / 推定 ${Math.round(estimatedSec)}秒`;
+  }, intervalMs);
+  return timer;
+}
+
+// ─── Whisper送信（1チャンク） ────────────────────
+async function transcribeBlob(blob, filename) {
+  const formData = new FormData();
+  formData.append('file', blob, filename);
+  formData.append('model', 'whisper-large-v3');
+  formData.append('language', 'ja');
+  formData.append('response_format', 'text');
+  const controller = new AbortController();
+  const timeoutId  = setTimeout(() => controller.abort(), 10 * 60 * 1000);
+  try {
+    const res = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + getGroqKey() },
+      body: formData,
+      signal: controller.signal,
+    });
+    if (!res.ok) {
+      const e = await res.json().catch(() => ({}));
+      throw new Error('Whisper APIエラー: ' + (e?.error?.message || res.status));
+    }
+    return await res.text();
+  } catch(err) {
+    if (err.name === 'AbortError') throw new Error('タイムアウト：通信が不安定です。再試行してください。');
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+// ─── 音声をチャンク分割（Web Audio API） ────────
+async function splitAudioToChunks(file) {
+  const arrayBuffer = await file.arrayBuffer();
+  const audioCtx = new AudioContext();
+  let audioBuffer;
+  try {
+    audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+  } finally {
+    await audioCtx.close().catch(() => {});
+  }
+  const totalSec    = audioBuffer.duration;
+  const sampleRate  = audioBuffer.sampleRate;
+  const numChannels = audioBuffer.numberOfChannels;
+  // WAV変換後モノラルになるのでモノラル換算でチャンクサイズを計算
+  const bytesPerSec = sampleRate * 1 * 2;
+  const maxBytes    = CHUNK_MAX_MB * 1024 * 1024;
+  const chunkSec    = Math.floor(maxBytes / bytesPerSec);
+  const chunks = [];
+  let start = 0;
+  while (start < totalSec) {
+    const end         = Math.min(start + chunkSec, totalSec);
+    const startSample = Math.floor(start * sampleRate);
+    const endSample   = Math.floor(end   * sampleRate);
+    const length      = endSample - startSample;
+    if (length <= 0) { start = end; continue; }
+    // Safari互換：OfflineAudioContextのcreateBufferを使用
+    const offCtx      = new OfflineAudioContext(numChannels, length, sampleRate);
+    const chunkBuffer = offCtx.createBuffer(numChannels, length, sampleRate);
+    for (let ch = 0; ch < numChannels; ch++) {
+      chunkBuffer.copyToChannel(audioBuffer.getChannelData(ch).slice(startSample, endSample), ch);
+    }
+    chunks.push(chunkBuffer);
+    start = end;
+  }
+  return chunks;
+}
+
+// AudioBufferをWAV Blobに変換（モノラルミックスダウン）
+function audioBufferToWavBlob(buffer) {
+  const sampleRate = buffer.sampleRate;
+  const length     = buffer.length;
+  const numCh      = buffer.numberOfChannels;
+  const monoData   = new Float32Array(length);
+  for (let ch = 0; ch < numCh; ch++) {
+    const chData = buffer.getChannelData(ch);
+    for (let i = 0; i < length; i++) monoData[i] += chData[i] / numCh;
+  }
+  const arrayBuf = new ArrayBuffer(44 + length * 2);
+  const view     = new DataView(arrayBuf);
+  const ws = (off, str) => { for (let i=0;i<str.length;i++) view.setUint8(off+i, str.charCodeAt(i)); };
+  ws(0,'RIFF'); view.setUint32(4, 36+length*2, true);
+  ws(8,'WAVE'); ws(12,'fmt '); view.setUint32(16,16,true);
+  view.setUint16(20,1,true); view.setUint16(22,1,true);
+  view.setUint32(24,sampleRate,true); view.setUint32(28,sampleRate*2,true);
+  view.setUint16(32,2,true); view.setUint16(34,16,true);
+  ws(36,'data'); view.setUint32(40,length*2,true);
+  let offset = 44;
+  for (let i=0;i<length;i++) {
+    const s = Math.max(-1, Math.min(1, monoData[i]));
+    view.setInt16(offset, s<0 ? s*0x8000 : s*0x7FFF, true);
+    offset += 2;
+  }
+  return new Blob([arrayBuf], { type: 'audio/wav' });
+}
+
+// ─── メイン処理 ──────────────────────────────
+document.getElementById('startBtn').addEventListener('click',async()=>{
+  clearError('processError'); clearError('fileError'); setStep(2);
+  const tStart = Date.now();
+  try {
+    const sizeMB     = state.file.size / 1024 / 1024;
+    const needsSplit = sizeMB > CHUNK_MAX_MB;
+    let transcripts  = [];
+
+    if (!needsSplit) {
+      // ─ 23MB以下：そのまま送信 ─
+      const estSec = Math.max(20, sizeMB * 3);
+      const timer  = startFakeUploadProgress(10, 50, estSec,
+        pct => `📤 アップロード・処理中... ${pct}%`);
+      const text = await transcribeBlob(state.file, state.file.name);
+      clearInterval(timer);
+      transcripts.push(text);
+      setProgress(55, '📝 文字起こし完了 → 議事録を生成中...', 'Claude APIで整形しています');
+
+    } else {
+      // ─ 23MB超：チャンク分割して順次送信 ─
+      setProgress(5, '🔪 音声を分割中...', 'デコードしています（しばらくお待ちください）');
+      const chunks = await splitAudioToChunks(state.file);
+      const total  = chunks.length;
+      for (let i = 0; i < total; i++) {
+        const startPct = Math.round(10 + (i / total) * 42);
+        const endPct   = Math.round(10 + ((i+1) / total) * 42);
+        const wav      = audioBufferToWavBlob(chunks[i]);
+        const estSec   = Math.max(20, (wav.size / 1024 / 1024) * 3);
+        const timer    = startFakeUploadProgress(startPct, endPct, estSec,
+          pct => `📤 チャンク ${i+1}/${total} 処理中... ${pct}%`);
+        const text = await transcribeBlob(wav, `chunk_${i+1}.wav`);
+        clearInterval(timer);
+        transcripts.push(text);
+      }
+      setProgress(55, '📝 全チャンク完了 → 議事録を生成中...', 'Claude APIで整形しています');
+    }
+
+    state.transcript = transcripts.join('\n\n');
+
+    const tpl      = getSelectedTemplate();
+    const datetime = getMeetingDatetime();
+    const members  = getMembersText();
+    const topic    = document.getElementById('meetingTopic').value.trim()||'（未記入）';
+    const prompt   =
+      `以下は会議の音声文字起こしです。日本語で議事録を作成してください。\n\n`+
+      `【会議情報】\n- 日時：${datetime}\n- 参加者：${members}\n- 議題：${topic}\n\n`+
+      `【文字起こし】\n${state.transcript}\n\n---\n\n`+
+      `【議事録作成の指示】\n${tpl.prompt}`;
+
+    const claudeController = new AbortController();
+    const claudeTimeout    = setTimeout(() => claudeController.abort(), 3 * 60 * 1000);
+    let cr;
+    try {
+      cr = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json', 'x-api-key':getAnthropicKey(), 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' },
+        body: JSON.stringify({ model:'claude-sonnet-4-5', max_tokens:4096, messages:[{role:'user',content:prompt}] }),
+        signal: claudeController.signal,
+      });
+    } catch(err) {
+      if (err.name === 'AbortError') throw new Error('タイムアウト：Claude APIからの応答がありません。');
+      throw err;
+    } finally {
+      clearTimeout(claudeTimeout);
+    }
+    if (!cr.ok) { const e=await cr.json().catch(()=>({})); throw new Error('Claude APIエラー: '+(e?.error?.message||cr.status)); }
+    setProgress(95,'✨ 仕上げ中...','');
+    const cd = await cr.json();
+    state.minutes = (cd.content&&cd.content[0]&&cd.content[0].text) ? cd.content[0].text : '（生成失敗）';
+
+    // ─ 処理時間・コスト計算（無料枠なのでGroqは0円） ─
+    const totalSec      = Math.round((Date.now() - tStart) / 1000);
+    const inputTokens   = cd.usage?.input_tokens  || 1500;
+    const outputTokens  = cd.usage?.output_tokens || 500;
+    const claudeCostUSD = (inputTokens * 3 + outputTokens * 15) / 1_000_000;
+    const claudeJPY     = Math.round(claudeCostUSD * 155);
+
+    document.getElementById('statsRow').innerHTML =
+      `<span class="tag ok">⏱ ${totalSec}秒</span>` +
+      `<span class="tag ok">Groq: 無料</span>` +
+      `<span class="tag ok">Claude: ${claudeJPY <= 1 ? '〜1円' : '約'+claudeJPY+'円'}</span>` +
+      `<span class="tag ok">合計: ${claudeJPY <= 1 ? '〜1円' : '約'+claudeJPY+'円'}</span>`;
+
+    setProgress(100,'✅ 完了！','');
+    await new Promise(r=>setTimeout(r,400));
+    document.getElementById('minutesResult').textContent = state.minutes;
+    document.getElementById('minutesEdit').value = state.minutes;
+    document.getElementById('transcriptResult').textContent = state.transcript;
+    setStep(3);
+  } catch(err) {
+    console.error(err);
+    showError('processError','❌ '+err.message);
+    document.getElementById('backBtn').style.display='block';
+  }
+});
+
+document.getElementById('backBtn').addEventListener('click',()=>{
+  clearError('processError');
+  document.getElementById('backBtn').style.display='none';
+  // プログレスバーをリセット
+  document.getElementById('progressBar').style.width='0%';
+  document.getElementById('progressLabel').textContent='送信中...';
+  document.getElementById('progressSub').textContent='';
+  setStep(1);
+});
+
+// ─── 編集トグル ──────────────────────────────
+let isEditing = false;
+document.getElementById('editToggle').addEventListener('click', () => {
+  isEditing = !isEditing;
+  const resultBox  = document.getElementById('minutesResult');
+  const editArea   = document.getElementById('minutesEdit');
+  const toggleBtn  = document.getElementById('editToggle');
+  if (isEditing) {
+    editArea.value = state.minutes;
+    resultBox.style.display  = 'none';
+    editArea.style.display   = 'block';
+    toggleBtn.textContent    = '✅ 確定';
+    toggleBtn.classList.add('active');
+  } else {
+    state.minutes = editArea.value;
+    resultBox.textContent    = state.minutes;
+    resultBox.style.display  = 'block';
+    editArea.style.display   = 'none';
+    toggleBtn.textContent    = '✏️ 編集';
+    toggleBtn.classList.remove('active');
+  }
+});
+
+// ─── コピー ──────────────────────────────────
+document.getElementById('copyBtn').addEventListener('click',()=>{
+  // 編集中の場合は編集エリアの内容を使用
+  const text = isEditing ? document.getElementById('minutesEdit').value : state.minutes;
+  navigator.clipboard.writeText(text)
+    .then(()=>showToast('コピーしました！'))
+    .catch(()=>{
+      const ta=document.createElement('textarea'); ta.value=text;
+      ta.style.position='fixed'; ta.style.opacity='0';
+      document.body.appendChild(ta); ta.focus(); ta.select();
+      document.execCommand('copy'); document.body.removeChild(ta);
+      showToast('コピーしました！');
+    });
+});
+
+// ─── メール ──────────────────────────────────
+document.getElementById('mailBtn').addEventListener('click',()=>{
+  const text = isEditing ? document.getElementById('minutesEdit').value : state.minutes;
+  const subject=encodeURIComponent('【議事録】'+getMeetingDatetime());
+  const body=encodeURIComponent(
+    text+'\n\n'+'━'.repeat(18)+'\n【文字起こし原文】\n'+'━'.repeat(18)+'\n'+state.transcript
+  );
+  window.location.href='mailto:?subject='+subject+'&body='+body;
+});
+
+// ─── ダウンロード ─────────────────────────────
+document.getElementById('dlBtn').addEventListener('click',()=>{
+  const text = isEditing ? document.getElementById('minutesEdit').value : state.minutes;
+  const dt=getMeetingDatetime().replace(/[/:]/g,'-').replace(/\s/g,'_');
+  const content=text+'\n\n'+'━'.repeat(18)+'\n【文字起こし原文】\n'+'━'.repeat(18)+'\n'+state.transcript;
+  const blob=new Blob([content],{type:'text/plain;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download='議事録_'+dt+'.txt';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url); showToast('保存しました！');
+});
+
+// ─── リセット ────────────────────────────────
+document.getElementById('resetBtn').addEventListener('click',()=>{
+  state.file=null; state.transcript=''; state.minutes='';
+  isEditing=false;
+  document.getElementById('minutesResult').style.display='block';
+  document.getElementById('minutesEdit').style.display='none';
+  document.getElementById('editToggle').textContent='✏️ 編集';
+  document.getElementById('editToggle').classList.remove('active');
+  document.getElementById('statsRow').innerHTML='';
+  document.getElementById('audioFile').value='';
+  document.getElementById('fileZone').classList.remove('has-file');
+  document.getElementById('fileName').textContent='';
+  document.getElementById('fileSize').innerHTML='';
+  document.getElementById('memberCustomer').value='';
+  document.getElementById('memberMaker').value='';
+  document.getElementById('meetingTopic').value='';
+  clearError('fileError'); clearError('processError');
+  setupDateTime(); setStep(1); updateStartBtn();
+});
+
+// ─── 初期化 ──────────────────────────────────
+initTemplates();
+setupDateTime();
+updateMemberSelf();
+updateApiStatus();
+updateStartBtn();
+updateTemplateSelect();
+</script>
+</body>
+</html>
