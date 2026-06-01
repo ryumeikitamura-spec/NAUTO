@@ -181,7 +181,7 @@
     <div class="header-catch">Less Writing. More Talking.</div>
   </div>
   <div class="header-right">
-    <div class="header-version">v1.8.7</div>
+    <div class="header-version">v1.8.8</div>
     <div class="settings-btn" id="settingsBtn">⚙️</div>
   </div>
 </div>
@@ -1163,7 +1163,9 @@ async function generateMinutes(transcript, stepCur, stepTotal) {
     `専門用語（CNC・ATC・マシニングセンタ・NC旋盤・パレットチェンジャー・ロボドリル・研削盤・放電加工機・BT30・HSK等）を正確に認識し、\n`+
     `テンプレートの指示に従って日本語で議事録を作成してください。\n`+
     `文字起こしに含まれない内容は追加しないでください。\n`+
-    `マークダウン記法（#・**・---など）は使用しないでください。\n\n`+
+    `マークダウン記法（#・##・**・*・---など）は一切使用しないでください。\n`+
+    `冒頭にタイトル行（# で始まる行）は不要です。\n`+
+    `テンプレートで指定したフォーマット以外のセクションは追加しないでください。\n\n`+
     `【会議情報】\n- 日時：${datetime}\n- 参加者：${members}\n- 議題：${topic}\n\n`+
     `【文字起こし】\n${transcript}\n\n---\n\n`+
     `【議事録作成の指示】\n${tpl.prompt}`;
