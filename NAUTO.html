@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="color-scheme" content="light">
+<meta name="supported-color-schemes" content="light">
 <title>NAUTO</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap');
@@ -13,9 +15,11 @@
     --border: #c2d8ef; --accent: #163A95; --accent2: #2C73D2;
     --accent-light: #A4D8F4; --text: #0e1e3d; --text-muted: #6b87a8;
     --danger: #d93030; --radius: 14px;
+    color-scheme: light;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-  body { font-family: 'Noto Sans JP', sans-serif; background: var(--bg); color: var(--text); min-height: 100dvh; }
+  body { font-family: 'Noto Sans JP', sans-serif; background: #f0f6ff !important; background-color: #f0f6ff !important; color: #0e1e3d !important; min-height: 100dvh; }
+  html { background: #f0f6ff !important; background-color: #f0f6ff !important; }
 
   /* ヘッダー */
   .header { padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: var(--accent); z-index: 100; }
@@ -177,7 +181,7 @@
     <div class="header-catch">Less Writing. More Talking.</div>
   </div>
   <div class="header-right">
-    <div class="header-version">v1.8.1</div>
+    <div class="header-version">v1.8.7</div>
     <div class="settings-btn" id="settingsBtn">⚙️</div>
   </div>
 </div>
@@ -438,15 +442,22 @@
 
     <!-- バックアップ -->
     <div class="modal-section">💾 バックアップ</div>
+
+    <div style="font-size:12px;font-weight:600;color:var(--text-muted);">APIキー</div>
     <div class="backup-row">
-      <button class="btn btn-secondary" id="exportBtn">📤 エクスポート</button>
-      <button class="btn btn-secondary" id="importBtnUI">📥 インポート</button>
-      <input type="file" id="importFile" accept=".json" style="display:none;">
+      <button class="btn btn-secondary" id="exportApiBtn">📤 エクスポート</button>
+      <button class="btn btn-secondary" id="importApiBtn">📥 インポート</button>
+      <input type="file" id="importApiFile" accept=".json" style="display:none;">
     </div>
-    <div style="font-size:12px;color:var(--text-muted);line-height:1.6;">
-      エクスポート：設定・テンプレートをJSONで保存（APIキーは含みません）<br>
-      インポート：バックアップJSONを読み込んで復元
+    <div style="font-size:11px;color:var(--danger);line-height:1.5;">⚠️ APIキーが含まれます。取り扱いにご注意ください。</div>
+
+    <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-top:4px;">テンプレート</div>
+    <div class="backup-row">
+      <button class="btn btn-secondary" id="exportTplBtn">📤 エクスポート</button>
+      <button class="btn btn-secondary" id="importTplBtn">📥 インポート</button>
+      <input type="file" id="importTplFile" accept=".json" style="display:none;">
     </div>
+    <div style="font-size:11px;color:var(--text-muted);line-height:1.5;">テンプレートのみ保存・復元します。</div>
 
     <button class="btn btn-ghost" id="cancelSettings">閉じる</button>
   </div>
@@ -672,44 +683,97 @@ function resetEditor() {
   document.getElementById('tplPrompt').value = '';
 }
 
-// ─── バックアップ エクスポート ──────────────────
-document.getElementById('exportBtn').addEventListener('click', () => {
+// ─── バックアップ：APIキー エクスポート ────────────
+document.getElementById('exportApiBtn').addEventListener('click', () => {
   const data = {
-    version: '1.3.4',
+    type: 'nauto_api_keys',
+    version: '1.8.6',
     exported_at: new Date().toISOString(),
-    my_name: getMyName(),
+    my_name:      getMyName(),
+    groq_key:     getGroqKey(),
+    deepgram_key: getDeepgramKey(),
+    anthropic_key:getAnthropicKey(),
+    mail_to:      getMailTo(),
+    stt_service:  getSttService(),
+    groq_fallback:getGroqFallback(),
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = 'NAUTO API KEY ' + new Date().toISOString().slice(0,16).replace(/[-:T]/g,'').replace(/^(.{8})(.{4})$/, '$1_$2') + '.json';
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+  showToast('APIキーをエクスポートしました');
+});
+
+// ─── バックアップ：APIキー インポート ────────────
+document.getElementById('importApiBtn').addEventListener('click', () => {
+  document.getElementById('importApiFile').click();
+});
+document.getElementById('importApiFile').addEventListener('change', e => {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (data.my_name)       LS.set('my_name',       data.my_name);
+      if (data.groq_key)      LS.set('groq_key',      data.groq_key);
+      if (data.deepgram_key)  LS.set('deepgram_key',  data.deepgram_key);
+      if (data.anthropic_key) LS.set('anthropic_key', data.anthropic_key);
+      if (data.mail_to)       LS.set('mail_to',       data.mail_to);
+      if (data.stt_service)   LS.set('stt_service',   data.stt_service);
+      if (data.groq_fallback) LS.set('groq_fallback', data.groq_fallback);
+      document.getElementById('settingMyName').value  = getMyName();
+      document.getElementById('groqKey').value        = getGroqKey();
+      document.getElementById('deepgramKey').value    = getDeepgramKey();
+      document.getElementById('anthropicKey').value   = getAnthropicKey();
+      document.getElementById('settingMailTo').value  = getMailTo();
+      const svc = getSttService();
+      document.querySelector(`input[name="sttService"][value="${svc}"]`).checked = true;
+      const fb  = getGroqFallback();
+      document.querySelector(`input[name="groqFallback"][value="${fb}"]`).checked = true;
+      updateGroqFallbackVisibility();
+      updateMemberSelf(); updateApiStatus(); updateStartBtn();
+      showToast('APIキーをインポートしました');
+    } catch(err) { showToast('読み込みに失敗しました'); }
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+});
+
+// ─── バックアップ：テンプレート エクスポート ────────
+document.getElementById('exportTplBtn').addEventListener('click', () => {
+  const data = {
+    type: 'nauto_templates',
+    version: '1.8.6',
+    exported_at: new Date().toISOString(),
     templates: getTemplates(),
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
   a.href = url;
-  a.download = 'nauto_backup_' + new Date().toISOString().slice(0,10) + '.json';
+  a.download = 'NAUTO TEMPLATE ' + new Date().toISOString().slice(0,16).replace(/[-:T]/g,'').replace(/^(.{8})(.{4})$/, '$1_$2') + '.json';
   document.body.appendChild(a); a.click();
   document.body.removeChild(a); URL.revokeObjectURL(url);
-  showToast('エクスポートしました');
+  showToast('テンプレートをエクスポートしました');
 });
 
-// ─── バックアップ インポート ────────────────────
-document.getElementById('importBtnUI').addEventListener('click', () => {
-  document.getElementById('importFile').click();
+// ─── バックアップ：テンプレート インポート ────────
+document.getElementById('importTplBtn').addEventListener('click', () => {
+  document.getElementById('importTplFile').click();
 });
-document.getElementById('importFile').addEventListener('change', e => {
+document.getElementById('importTplFile').addEventListener('change', e => {
   const file = e.target.files[0]; if (!file) return;
   const reader = new FileReader();
   reader.onload = ev => {
     try {
       const data = JSON.parse(ev.target.result);
-      if (data.my_name)   LS.set('my_name', data.my_name);
       if (data.templates) saveTemplates(data.templates);
-      updateMemberSelf(); updateApiStatus(); updateStartBtn();
       renderTemplateList(); updateTemplateSelect();
-      // 設定画面の入力欄も更新
-      document.getElementById('settingMyName').value = getMyName();
-      showToast('インポートしました');
-    } catch(err) {
-      showToast('読み込みに失敗しました');
-    }
+      showToast('テンプレートをインポートしました');
+    } catch(err) { showToast('読み込みに失敗しました'); }
     e.target.value = '';
   };
   reader.readAsText(file);
@@ -807,11 +871,14 @@ function updateApiStatus() {
     `<span class="tag ${a?'ok':'bad'}">${a ? '✓ Anthropic' : '✗ Anthropic未設定'}</span>`;
 }
 function updateStartBtn() {
-  const svc    = getSttService();
-  const hasSTT = svc === 'groq' ? !!getGroqKey() : !!getDeepgramKey();
-  const hasInput = !!(state.file || state.textFile);
-  document.getElementById('startBtn').disabled = !(hasInput && (state.textFile || hasSTT) && getAnthropicKey());
-  document.getElementById('startBtn').textContent = state.textFile ? '議事録を生成 →' : '文字起こしを開始 →';
+  const svc      = getSttService();
+  const hasSTT   = svc === 'groq' ? !!getGroqKey() : !!getDeepgramKey();
+  const hasAudio = !!state.file;
+  const hasText  = !!state.textFile;
+  const hasInput = hasAudio || hasText;
+  const canStart = hasInput && getAnthropicKey() && (hasText || hasSTT);
+  document.getElementById('startBtn').disabled    = !canStart;
+  document.getElementById('startBtn').textContent = hasText ? '議事録を生成 →' : '文字起こしを開始 →';
 }
 
 // テキストファイル選択
@@ -843,9 +910,12 @@ function setProgress(pct, label, sub, stepCur, stepTotal) {
   document.getElementById('progressBar').style.width = pct+'%';
   document.getElementById('progressLabel').textContent = label;
   document.getElementById('progressSub').textContent  = sub||'';
+  const indicator = document.getElementById('stepIndicator');
   if (stepCur && stepTotal) {
     document.getElementById('stepBadge').textContent = `STEP ${stepCur}/${stepTotal}`;
-    document.getElementById('stepIndicator').style.display = 'flex';
+    indicator.style.display = 'flex';
+  } else if (stepCur === '' || stepTotal === '') {
+    indicator.style.display = 'none';
   }
 }
 function showToast(msg) {
@@ -1046,19 +1116,30 @@ function audioBufferToWavBlob(buffer) {
 async function transcribeWithDeepgram(file) {
   const controller = new AbortController();
   const timeoutId  = setTimeout(() => controller.abort(), 10 * 60 * 1000);
+
+  // ファイル拡張子からContent-Typeを決定
+  const name = file.name.toLowerCase();
+  let contentType = 'audio/mp4'; // デフォルト（m4a）
+  if (name.endsWith('.mp3'))  contentType = 'audio/mpeg';
+  if (name.endsWith('.wav'))  contentType = 'audio/wav';
+  if (name.endsWith('.webm')) contentType = 'audio/webm';
+  if (name.endsWith('.mp4'))  contentType = 'audio/mp4';
+
   try {
-    const res = await fetch('https://api.deepgram.com/v1/listen?model=nova-3&language=ja&smart_format=true', {
+    // smart_format=falseで日本語の誤補完を防ぐ
+    const res = await fetch('https://api.deepgram.com/v1/listen?model=nova-3&language=ja&smart_format=false', {
       method: 'POST',
       headers: {
         'Authorization': 'Token ' + getDeepgramKey(),
-        'Content-Type': 'audio/mp4', // m4a/mp4系を統一的に指定
+        'Content-Type': contentType,
       },
       body: file,
       signal: controller.signal,
     });
     if (!res.ok) {
       const e = await res.json().catch(() => ({}));
-      throw new Error('Deepgram APIエラー: ' + (e?.err_msg || res.status));
+      // Deepgramはerr_msg、message、reason等でエラーを返す
+      throw new Error('Deepgram APIエラー: ' + (e?.err_msg || e?.message || e?.reason || res.status));
     }
     const data = await res.json();
     return data?.results?.channels?.[0]?.alternatives?.[0]?.transcript || '';
@@ -1078,7 +1159,11 @@ async function generateMinutes(transcript, stepCur, stepTotal) {
   const members = getMembersText();
   const topic   = document.getElementById('meetingTopic').value.trim()||'（未記入）';
   const prompt  =
-    `以下は会議の音声文字起こしです。日本語で議事録を作成してください。\n\n`+
+    `以下は製造業・工作機械業界の商談音声文字起こしです。\n`+
+    `専門用語（CNC・ATC・マシニングセンタ・NC旋盤・パレットチェンジャー・ロボドリル・研削盤・放電加工機・BT30・HSK等）を正確に認識し、\n`+
+    `テンプレートの指示に従って日本語で議事録を作成してください。\n`+
+    `文字起こしに含まれない内容は追加しないでください。\n`+
+    `マークダウン記法（#・**・---など）は使用しないでください。\n\n`+
     `【会議情報】\n- 日時：${datetime}\n- 参加者：${members}\n- 議題：${topic}\n\n`+
     `【文字起こし】\n${transcript}\n\n---\n\n`+
     `【議事録作成の指示】\n${tpl.prompt}`;
@@ -1142,6 +1227,10 @@ document.getElementById('startBtn').addEventListener('click', async () => {
   const svc       = getSttService();
   const fallback  = getGroqFallback();
 
+  let transcriptText = '';
+  let usedDeepgram   = false;
+  let activeTimer    = null; // 疑似プログレスタイマー管理
+
   try {
     // テキストファイルの場合：文字起こしスキップ
     if (state.textFile) {
@@ -1151,31 +1240,30 @@ document.getElementById('startBtn').addEventListener('click', async () => {
       finishProcessing(tStart, 0, false, usage);
       return;
     }
-
-    let transcriptText = '';
-    let usedDeepgram   = false;
+    // タイマー安全クリア用ラッパー
+    const clearActiveTimer = () => { if (activeTimer) { clearInterval(activeTimer); activeTimer = null; } };
 
     if (svc === 'deepgram') {
-      const estSec = Math.max(20, sizeMB * 2);
-      const timer  = startFakeUploadProgress(10, 50, estSec, pct => `📤 Deepgramに送信中... ${pct}%`);
       setProgress(10, '📤 Deepgramに送信中...', '', 1, 2);
+      const estSec = Math.max(20, sizeMB * 2);
+      activeTimer  = startFakeUploadProgress(10, 50, estSec, pct => `📤 Deepgramに送信中... ${pct}%`);
       transcriptText = await transcribeWithDeepgram(state.file);
-      clearInterval(timer); usedDeepgram = true;
+      clearActiveTimer(); usedDeepgram = true;
 
     } else if (sizeMB <= CHUNK_MAX_MB) {
-      const estSec = Math.max(20, sizeMB * 3);
-      const timer  = startFakeUploadProgress(10, 50, estSec, pct => `📤 Groqに送信中... ${pct}%`);
       setProgress(10, '📤 Groqに送信中...', '', 1, 2);
+      const estSec = Math.max(20, sizeMB * 3);
+      activeTimer  = startFakeUploadProgress(10, 50, estSec, pct => `📤 Groqに送信中... ${pct}%`);
       transcriptText = await transcribeBlob(state.file, state.file.name);
-      clearInterval(timer);
+      clearActiveTimer();
 
     } else if (fallback === 'deepgram') {
       if (!getDeepgramKey()) throw new Error('Deepgram APIキーが設定されていません。');
-      const estSec = Math.max(20, sizeMB * 2);
-      const timer  = startFakeUploadProgress(10, 50, estSec, pct => `📤 Deepgramに自動切り替え中... ${pct}%`);
       setProgress(10, '📤 Deepgramに自動切り替え中...', '', 1, 2);
+      const estSec = Math.max(20, sizeMB * 2);
+      activeTimer  = startFakeUploadProgress(10, 50, estSec, pct => `📤 Deepgramに自動切り替え中... ${pct}%`);
       transcriptText = await transcribeWithDeepgram(state.file);
-      clearInterval(timer); usedDeepgram = true;
+      clearActiveTimer(); usedDeepgram = true;
 
     } else if (fallback === 'split') {
       setProgress(5, '🔪 音声を分割中...', '', 1, 3);
@@ -1187,10 +1275,10 @@ document.getElementById('startBtn').addEventListener('click', async () => {
         const estSec = Math.max(20, (wav.size/1024/1024)*3);
         const sp     = Math.round(10 + (i/total)*42);
         const ep     = Math.round(10 + ((i+1)/total)*42);
-        const timer  = startFakeUploadProgress(sp, ep, estSec, pct => `📤 チャンク ${i+1}/${total}... ${pct}%`);
         setProgress(sp, `📤 チャンク ${i+1}/${total} 送信中...`, '', i+2, total+2);
+        activeTimer  = startFakeUploadProgress(sp, ep, estSec, pct => `📤 チャンク ${i+1}/${total}... ${pct}%`);
         parts.push(await transcribeBlob(wav, `chunk_${i+1}.wav`));
-        clearInterval(timer);
+        clearActiveTimer();
       }
       transcriptText = parts.join('\n\n');
 
@@ -1205,6 +1293,7 @@ document.getElementById('startBtn').addEventListener('click', async () => {
 
   } catch(err) {
     console.error(err);
+    if (activeTimer) { clearInterval(activeTimer); activeTimer = null; }
     if (state.transcript) {
       document.getElementById('transcriptSavedMsg').style.display = 'block';
       document.getElementById('retryClaudeBtn').style.display     = 'block';
@@ -1322,7 +1411,8 @@ async function sendChatMessage() {
   } finally {
     input.disabled = false;
     document.getElementById('chatSendBtn').disabled = false;
-    input.focus();
+    // iPhoneではfocusでキーボードが開くため省略
+    if (!('ontouchstart' in window)) input.focus();
   }
 }
 
