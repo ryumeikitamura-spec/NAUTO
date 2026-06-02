@@ -194,7 +194,9 @@
   .member-input-row { position: relative; margin-top: 8px; display: flex; gap: 6px; align-items: flex-start; }
   .member-input-row .member-input { flex: 1; border: 1.5px solid var(--accent2); border-radius: 10px; padding: 8px 12px; font-size: 14px; }
   .member-confirm-btn { font-size: 13px; font-weight: 700; background: var(--accent2); color: #fff; border: none; border-radius: 10px; padding: 8px 14px; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
-  .member-suggest { position: absolute; top: 100%; left: 0; right: 0; background: var(--surface); border: 1.5px solid var(--accent2); border-radius: 10px; z-index: 500; display: none; flex-direction: column; box-shadow: 0 8px 24px rgba(0,0,0,0.18); max-height: 240px; overflow-y: auto; }
+  .member-suggest { background: var(--surface); border: 1.5px solid var(--accent2); border-radius: 10px; display: none; flex-direction: column; box-shadow: 0 4px 16px rgba(0,0,0,0.12); max-height: 240px; overflow-y: auto; margin-top: 4px; }
+  .member-suggest.open { display: flex; }
+  .member-suggest-wrap { margin-top: 4px; }
   .member-suggest-header { padding: 8px 14px; font-size: 11px; font-weight: 700; color: var(--text-muted); letter-spacing: 0.5px; background: var(--surface2); border-bottom: 1px solid var(--border); }
   .member-suggest-back { padding: 10px 14px; font-size: 13px; color: var(--accent2); cursor: pointer; border-bottom: 1px solid var(--border); font-weight: 600; }
   .member-suggest-new { padding: 10px 14px; font-size: 13px; color: var(--accent2); cursor: pointer; border-top: 1px solid var(--border); font-weight: 600; }
@@ -216,7 +218,7 @@
     <div class="header-catch">Less Writing. More Talking.</div>
   </div>
   <div class="header-right">
-    <div class="header-version">v2.0.1</div>
+    <div class="header-version">v2.0.4</div>
     <div class="settings-btn" id="settingsBtn">⚙️</div>
   </div>
 </div>
@@ -242,23 +244,19 @@
       <div class="member-multi-section">
         <div class="member-multi-header">
           <div class="member-role">お客様</div>
-          <button class="member-add-btn" onclick="addMember('customer')">＋ 追加</button>
+          <button class="member-add-btn" id="addCustomerBtn">＋ 追加</button>
         </div>
         <div class="member-tag-list" id="customerTags"></div>
-        <div class="member-suggest-wrap" id="customerSuggestWrap" style="position:relative;display:none;margin-top:8px;">
-          <div class="member-suggest open" id="customerSuggest"></div>
-        </div>
+        <div class="member-picker" id="customerPicker" style="display:none;"></div>
       </div>
       <!-- 同行者 -->
       <div class="member-multi-section">
         <div class="member-multi-header">
           <div class="member-role">同行者</div>
-          <button class="member-add-btn" onclick="addMember('companion')">＋ 追加</button>
+          <button class="member-add-btn" id="addCompanionBtn">＋ 追加</button>
         </div>
         <div class="member-tag-list" id="companionTags"></div>
-        <div class="member-suggest-wrap" id="companionSuggestWrap" style="position:relative;display:none;margin-top:8px;">
-          <div class="member-suggest open" id="companionSuggest"></div>
-        </div>
+        <div class="member-picker" id="companionPicker" style="display:none;"></div>
       </div>
       <!-- 自分（固定） -->
       <div class="member-multi-section">
@@ -948,7 +946,6 @@ function getAllMasterData() {
     const raw = LS.get('master_data');
     if (raw) {
       const d = JSON.parse(raw);
-      // 旧形式（customer/maker/self）→新形式（companies）に移行
       if (d.companies) return d;
       const companies = [];
       if (d.customer) d.customer.forEach(e => companies.push(e));
@@ -980,131 +977,106 @@ function renderMemberTags(type) {
   });
 }
 
-// 2段階選択：STEP1 会社選択
-function addMember(type) {
-  const wrap   = document.getElementById(type + 'SuggestWrap');
-  const suggest= document.getElementById(type + 'Suggest');
-  wrap.style.display = 'block';
-  showCompanyStep(type, suggest);
+// picker描画（会社一覧→担当者一覧の2段階）
+function showPicker(type) {
+  const picker = document.getElementById(type + 'Picker');
+  if (!picker) return;
+  if (picker.style.display === 'block') {
+    picker.style.display = 'none';
+    return;
+  }
+  // 他を閉じる
+  ['customer','companion'].forEach(t => {
+    const p = document.getElementById(t + 'Picker');
+    if (p) p.style.display = 'none';
+  });
+  picker.style.display = 'block';
+  renderCompanyList(type, picker);
 }
 
-function showCompanyStep(type, suggest) {
+function renderCompanyList(type, picker) {
   const data = getAllMasterData();
   const companies = data.companies || [];
-  suggest.innerHTML = '';
+  picker.innerHTML = '';
+  picker.style.cssText = 'display:block;background:var(--surface);border:1.5px solid var(--accent2);border-radius:12px;overflow:hidden;margin-top:6px;';
 
   const header = document.createElement('div');
-  header.className = 'member-suggest-header';
+  header.style.cssText = 'padding:8px 14px;font-size:11px;font-weight:700;color:var(--text-muted);background:var(--surface2);border-bottom:1px solid var(--border);letter-spacing:0.5px;';
   header.textContent = '会社を選択';
-  suggest.appendChild(header);
+  picker.appendChild(header);
 
   companies.forEach(entry => {
     const item = document.createElement('div');
-    item.className = 'member-suggest-item';
+    item.style.cssText = 'padding:12px 16px;font-size:14px;cursor:pointer;border-bottom:1px solid var(--border);';
     item.textContent = entry.company;
-    item.onclick = () => showPersonStep(type, suggest, entry.company, entry.persons);
-    suggest.appendChild(item);
+    item.addEventListener('click', () => renderPersonList(type, picker, entry.company, entry.persons));
+    picker.appendChild(item);
   });
 
-  const newItem = document.createElement('div');
-  newItem.className = 'member-suggest-new';
-  newItem.textContent = '＋ 新しい会社名を入力';
-  newItem.onclick = () => {
-    suggest.innerHTML = '';
-    const header = document.createElement('div');
-    header.className = 'member-suggest-header';
-    header.textContent = '新しい会社名を入力';
-    suggest.appendChild(header);
-    const row = document.createElement('div');
-    row.style.cssText = 'display:flex;gap:6px;padding:10px;';
-    const inp = document.createElement('input');
-    inp.type='text'; inp.placeholder='会社名';
-    inp.style.cssText='flex:1;padding:8px 12px;font-size:14px;border:1.5px solid var(--accent2);border-radius:8px;outline:none;font-family:inherit;background:var(--surface);color:var(--text);min-width:0;';
-    const ok = document.createElement('button');
-    ok.textContent='決定'; ok.className='btn btn-primary btn-sm';
-    ok.style.flexShrink='0';
-    ok.onclick = () => { if(inp.value.trim()) showPersonStep(type, suggest, inp.value.trim(), []); };
-    inp.onkeydown = (e) => { if(e.key==='Enter') ok.onclick(); if(e.key==='Escape') showCompanyStep(type, suggest); };
-    row.appendChild(inp); row.appendChild(ok);
-    suggest.appendChild(row);
-    inp.focus();
-  };
-  suggest.appendChild(newItem);
-
-  closeOnOutside(type);
+  // 直接入力
+  const directRow = document.createElement('div');
+  directRow.style.cssText = 'padding:10px;display:flex;gap:6px;border-top:1px solid var(--border);';
+  const inp = document.createElement('input');
+  inp.type='text'; inp.placeholder='直接入力（会社名 氏名）';
+  inp.style.cssText='flex:1;padding:8px 12px;font-size:13px;border:1.5px solid var(--border);border-radius:8px;outline:none;font-family:inherit;background:var(--surface);color:var(--text);min-width:0;';
+  const ok = document.createElement('button');
+  ok.textContent='追加'; ok.className='btn btn-primary btn-sm';
+  ok.style.cssText='flex-shrink:0;padding:8px 12px;';
+  ok.addEventListener('click', () => {
+    if (!inp.value.trim()) return;
+    if (!members[type].includes(inp.value.trim())) {
+      members[type].push(inp.value.trim());
+      renderMemberTags(type);
+    }
+    picker.style.display = 'none';
+  });
+  inp.addEventListener('keydown', e => { if(e.key==='Enter') ok.click(); });
+  directRow.appendChild(inp); directRow.appendChild(ok);
+  picker.appendChild(directRow);
 }
 
-// STEP2 担当者選択
-function showPersonStep(type, suggest, company, persons) {
-  suggest.innerHTML = '';
+function renderPersonList(type, picker, company, persons) {
+  picker.innerHTML = '';
 
   const back = document.createElement('div');
-  back.className = 'member-suggest-back';
+  back.style.cssText = 'padding:10px 14px;font-size:13px;color:var(--accent2);cursor:pointer;font-weight:600;border-bottom:1px solid var(--border);background:var(--surface2);';
   back.textContent = '← ' + company;
-  back.onclick = () => showCompanyStep(type, suggest);
-  suggest.appendChild(back);
+  back.addEventListener('click', () => renderCompanyList(type, picker));
+  picker.appendChild(back);
 
   persons.forEach(person => {
     const item = document.createElement('div');
-    item.className = 'member-suggest-item';
+    item.style.cssText = 'padding:12px 16px;font-size:14px;cursor:pointer;border-bottom:1px solid var(--border);';
     item.textContent = person;
-    item.onclick = () => {
+    item.addEventListener('click', () => {
       const fullName = company + ' ' + person;
       if (!members[type].includes(fullName)) {
         members[type].push(fullName);
         renderMemberTags(type);
       }
-      closeSuggest(type);
-    };
-    suggest.appendChild(item);
+      picker.style.display = 'none';
+    });
+    picker.appendChild(item);
   });
 
-  const newItem = document.createElement('div');
-  newItem.className = 'member-suggest-new';
-  newItem.textContent = '＋ 直接入力';
-  newItem.onclick = () => {
-    suggest.innerHTML = '';
-    const header = document.createElement('div');
-    header.className = 'member-suggest-header';
-    header.textContent = company + ' の担当者を入力';
-    suggest.appendChild(header);
-    const row = document.createElement('div');
-    row.style.cssText = 'display:flex;gap:6px;padding:10px;';
-    const inp = document.createElement('input');
-    inp.type='text'; inp.placeholder='担当者名';
-    inp.style.cssText='flex:1;padding:8px 12px;font-size:14px;border:1.5px solid var(--accent2);border-radius:8px;outline:none;font-family:inherit;background:var(--surface);color:var(--text);min-width:0;';
-    const ok = document.createElement('button');
-    ok.textContent='追加'; ok.className='btn btn-primary btn-sm';
-    ok.style.flexShrink='0';
-    ok.onclick = () => {
-      if (!inp.value.trim()) return;
-      const fullName = company + ' ' + inp.value.trim();
-      if (!members[type].includes(fullName)) { members[type].push(fullName); renderMemberTags(type); }
-      closeSuggest(type);
-    };
-    inp.onkeydown = (e) => { if(e.key==='Enter') ok.onclick(); if(e.key==='Escape') showPersonStep(type, suggest, company, persons); };
-    row.appendChild(inp); row.appendChild(ok);
-    suggest.appendChild(row);
-    inp.focus();
-  };
-  suggest.appendChild(newItem);
-}
-
-function closeSuggest(type) {
-  const wrap = document.getElementById(type + 'SuggestWrap');
-  if (wrap) wrap.style.display = 'none';
-}
-
-function closeOnOutside(type) {
-  setTimeout(() => {
-    document.addEventListener('click', function handler(e) {
-      const wrap = document.getElementById(type + 'SuggestWrap');
-      if (wrap && !wrap.contains(e.target)) {
-        wrap.style.display = 'none';
-        document.removeEventListener('click', handler);
-      }
-    });
-  }, 100);
+  // 担当者直接入力
+  const directRow = document.createElement('div');
+  directRow.style.cssText = 'padding:10px;display:flex;gap:6px;border-top:1px solid var(--border);';
+  const inp = document.createElement('input');
+  inp.type='text'; inp.placeholder='担当者名を入力';
+  inp.style.cssText='flex:1;padding:8px 12px;font-size:13px;border:1.5px solid var(--border);border-radius:8px;outline:none;font-family:inherit;background:var(--surface);color:var(--text);min-width:0;';
+  const ok = document.createElement('button');
+  ok.textContent='追加'; ok.className='btn btn-primary btn-sm';
+  ok.style.cssText='flex-shrink:0;padding:8px 12px;';
+  ok.addEventListener('click', () => {
+    if (!inp.value.trim()) return;
+    const fullName = company + ' ' + inp.value.trim();
+    if (!members[type].includes(fullName)) { members[type].push(fullName); renderMemberTags(type); }
+    picker.style.display = 'none';
+  });
+  inp.addEventListener('keydown', e => { if(e.key==='Enter') ok.click(); });
+  directRow.appendChild(inp); directRow.appendChild(ok);
+  picker.appendChild(directRow);
 }
 
 function getMembersText() {
@@ -1122,8 +1094,8 @@ function resetMembers() {
   members.companion = [];
   ['customer','companion'].forEach(t => {
     renderMemberTags(t);
-    const wrap = document.getElementById(t + 'SuggestWrap');
-    if (wrap) wrap.style.display = 'none';
+    const p = document.getElementById(t + 'Picker');
+    if (p) p.style.display = 'none';
   });
 }
 
@@ -1930,8 +1902,11 @@ updateMemberSelf();
 updateApiStatus();
 updateStartBtn();
 updateTemplateSelect();
-// Groq選択時のフォールバックセクション初期表示
 updateGroqFallbackVisibility();
+
+// 参加者追加ボタンのイベント登録
+document.getElementById('addCustomerBtn').addEventListener('click', () => showPicker('customer'));
+document.getElementById('addCompanionBtn').addEventListener('click', () => showPicker('companion'));
 </script>
 </body>
 </html>
