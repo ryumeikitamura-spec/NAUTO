@@ -96,7 +96,7 @@
   .btn-secondary { background: var(--surface2); color: var(--text); border: 1.5px solid var(--border); }
   .btn-ghost     { background: transparent; color: var(--text-muted); font-size: 13px; padding: 10px; }
   .btn-danger    { background: rgba(217,48,48,0.08); color: var(--danger); border: 1px solid rgba(217,48,48,0.2); font-size: 13px; padding: 8px 12px; width: auto; border-radius: 8px; }
-  .btn-sm        { font-size: 12px; padding: 8px 12px; width: auto; border-radius: 8px; }
+  .btn-sm        { font-size: 12px; padding: 8px 12px; width: auto !important; border-radius: 8px; }
   .btn:disabled  { opacity: 0.35; cursor: not-allowed; }
 
   /* アクショングリッド */
@@ -159,6 +159,19 @@
   .chat-send { width: auto; padding: 12px 18px; font-size: 14px; flex-shrink: 0; }
   .chat-loading { color: var(--text-muted); font-size: 13px; font-style: italic; }
 
+  .member-suggest-new { padding: 10px 14px; font-size: 13px; color: var(--accent2); cursor: pointer; border-top: 1px solid var(--border); font-weight: 600; }
+
+  /* マスターリスト */
+  .master-list { display: flex; flex-direction: column; gap: 8px; }
+  .master-company-block { background: var(--surface2); border: 1.5px solid var(--border); border-radius: 12px; padding: 10px 14px; }
+  .master-company-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .master-company-name { flex: 1; font-size: 14px; font-weight: 600; color: var(--text); border: none; background: transparent; outline: none; font-family: 'Noto Sans JP', sans-serif; }
+  .master-company-remove { color: var(--text-muted); cursor: pointer; font-size: 16px; padding: 0 2px; }
+  .master-persons { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+  .master-person-tag { display: flex; align-items: center; gap: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 3px 10px; font-size: 12px; }
+  .master-person-remove { color: var(--text-muted); cursor: pointer; font-size: 13px; }
+  .master-add-person { font-size: 12px; color: var(--accent2); background: rgba(44,115,210,0.08); border: 1px solid rgba(44,115,210,0.2); border-radius: 20px; padding: 3px 10px; cursor: pointer; font-weight: 600; }
+
   /* サービス選択 */
   .service-select-group { display: flex; flex-direction: column; gap: 8px; }
   .service-radio { display: flex; align-items: center; cursor: pointer; }
@@ -167,6 +180,28 @@
   .service-radio input:checked + .service-radio-box { border-color: var(--accent2); background: rgba(44,115,210,0.08); }
   .service-radio-title { font-size: 14px; font-weight: 600; color: var(--text); }
   .service-radio-desc  { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+  /* 参加者マルチカード */
+  .member-multi-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); overflow: visible; display: flex; flex-direction: column; }
+  .member-multi-section { padding: 12px 16px; border-bottom: 1px solid var(--border); }
+  .member-multi-section:last-child { border-bottom: none; }
+  .member-multi-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .member-add-btn { font-size: 12px; font-weight: 700; color: var(--accent2); background: rgba(44,115,210,0.08); border: 1px solid rgba(44,115,210,0.2); border-radius: 8px; padding: 3px 10px; cursor: pointer; }
+  .member-tag-list { display: flex; flex-wrap: wrap; gap: 6px; min-height: 8px; }
+  .member-tag { display: flex; align-items: center; gap: 4px; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 4px 10px; font-size: 13px; }
+  .member-tag-remove { color: var(--text-muted); cursor: pointer; font-size: 14px; line-height: 1; padding: 0 2px; }
+  .member-tag-remove:hover { color: var(--danger); }
+  .member-input-row { position: relative; margin-top: 8px; display: flex; gap: 6px; align-items: flex-start; }
+  .member-input-row .member-input { flex: 1; border: 1.5px solid var(--accent2); border-radius: 10px; padding: 8px 12px; font-size: 14px; }
+  .member-confirm-btn { font-size: 13px; font-weight: 700; background: var(--accent2); color: #fff; border: none; border-radius: 10px; padding: 8px 14px; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+  .member-suggest { position: absolute; top: 100%; left: 0; right: 0; background: var(--surface); border: 1.5px solid var(--accent2); border-radius: 10px; z-index: 500; display: none; flex-direction: column; box-shadow: 0 8px 24px rgba(0,0,0,0.18); max-height: 240px; overflow-y: auto; }
+  .member-suggest-header { padding: 8px 14px; font-size: 11px; font-weight: 700; color: var(--text-muted); letter-spacing: 0.5px; background: var(--surface2); border-bottom: 1px solid var(--border); }
+  .member-suggest-back { padding: 10px 14px; font-size: 13px; color: var(--accent2); cursor: pointer; border-bottom: 1px solid var(--border); font-weight: 600; }
+  .member-suggest-new { padding: 10px 14px; font-size: 13px; color: var(--accent2); cursor: pointer; border-top: 1px solid var(--border); font-weight: 600; }
+  .member-suggest.open { display: flex; }
+  .member-suggest-item { padding: 10px 14px; font-size: 14px; cursor: pointer; border-bottom: 1px solid var(--border); }
+  .member-suggest-item:last-child { border-bottom: none; }
+  .member-suggest-item:hover { background: var(--surface2); }
 
   /* トースト */
   .toast { position: fixed; bottom: calc(28px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%) translateY(80px); background: var(--accent); color: #fff; font-weight: 700; font-size: 14px; padding: 12px 24px; border-radius: 100px; transition: transform 0.3s ease; z-index: 300; white-space: nowrap; pointer-events: none; }
@@ -181,7 +216,7 @@
     <div class="header-catch">Less Writing. More Talking.</div>
   </div>
   <div class="header-right">
-    <div class="header-version">v1.8.8</div>
+    <div class="header-version">v2.0.1</div>
     <div class="settings-btn" id="settingsBtn">⚙️</div>
   </div>
 </div>
@@ -202,19 +237,36 @@
 
     <div class="divider"></div>
     <div class="section-title">👥 参加者</div>
-    <div class="member-card">
-      <div class="member-row">
-        <div class="member-role">お客様</div>
-        <input class="member-input" id="memberCustomer" type="text" placeholder="会社名・担当者名">
+    <div class="member-multi-card">
+      <!-- お客様 -->
+      <div class="member-multi-section">
+        <div class="member-multi-header">
+          <div class="member-role">お客様</div>
+          <button class="member-add-btn" onclick="addMember('customer')">＋ 追加</button>
+        </div>
+        <div class="member-tag-list" id="customerTags"></div>
+        <div class="member-suggest-wrap" id="customerSuggestWrap" style="position:relative;display:none;margin-top:8px;">
+          <div class="member-suggest open" id="customerSuggest"></div>
+        </div>
       </div>
-      <div class="member-row">
-        <div class="member-role">メーカー</div>
-        <input class="member-input" id="memberMaker" type="text" placeholder="メーカー名・担当者名">
+      <!-- 同行者 -->
+      <div class="member-multi-section">
+        <div class="member-multi-header">
+          <div class="member-role">同行者</div>
+          <button class="member-add-btn" onclick="addMember('companion')">＋ 追加</button>
+        </div>
+        <div class="member-tag-list" id="companionTags"></div>
+        <div class="member-suggest-wrap" id="companionSuggestWrap" style="position:relative;display:none;margin-top:8px;">
+          <div class="member-suggest open" id="companionSuggest"></div>
+        </div>
       </div>
-      <div class="member-row">
-        <div class="member-role">自分</div>
-        <div class="member-fixed" id="memberSelf">（設定から登録）</div>
-        <div class="member-badge">固定</div>
+      <!-- 自分（固定） -->
+      <div class="member-multi-section">
+        <div class="member-multi-header">
+          <div class="member-role">自分</div>
+          <div class="member-badge">固定</div>
+        </div>
+        <div class="member-fixed" id="memberSelf" style="font-size:14px;font-weight:500;color:var(--accent2);padding:4px 0;">（設定から登録）</div>
       </div>
     </div>
 
@@ -336,6 +388,22 @@
 
     <div class="modal-divider"></div>
 
+    <!-- 参加者マスター -->
+    <div class="modal-section">👥 参加者マスター</div>
+    <details id="masterDetails">
+      <summary style="cursor:pointer;font-size:13px;font-weight:600;color:var(--accent2);padding:8px 0;">📋 会社・担当者リストを見る／編集する</summary>
+      <div style="font-size:12px;color:var(--text-muted);margin:6px 0 8px;">会社名と担当者を登録。お客様・同行者の選択時に使用されます。</div>
+      <div class="master-list" id="masterCompaniesList"></div>
+      <div class="master-add-row" id="masterAddRow" style="display:none;margin-top:8px;gap:8px;align-items:center;">
+        <input type="text" id="masterAddInput" placeholder="会社名を入力" style="flex:1;padding:10px 14px;font-size:14px;border:1.5px solid var(--accent2);border-radius:10px;outline:none;background:var(--surface);color:var(--text);font-family:'Noto Sans JP',sans-serif;">
+        <button class="btn btn-primary btn-sm" onclick="confirmAddCompany()">追加</button>
+        <button class="btn btn-secondary btn-sm" onclick="cancelAddCompany()">取消</button>
+      </div>
+      <button class="btn btn-secondary btn-sm" id="showMasterAddBtn" style="margin-top:6px;" onclick="showAddCompanyInput()">＋ 会社を追加</button>
+    </details>
+
+    <div class="modal-divider"></div>
+
     <!-- APIキー -->
     <div class="modal-section">🎙 文字起こしサービス</div>
 
@@ -413,6 +481,22 @@
     </div>
     <div style="font-size:12px;color:var(--text-muted);">複数の場合はカンマ区切り（例：a@co.jp,b@co.jp）</div>
 
+    <div class="modal-divider"></div>
+
+    <!-- 単語マスター -->
+    <div class="modal-section">📖 単語マスター</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">専門用語・製品名・固有名詞を登録。議事録生成時にClaudeへ自動的に渡されます。</div>
+
+    <!-- 登録済み単語（折りたたみ） -->
+    <details id="wordMasterDetails">
+      <summary style="cursor:pointer;font-size:13px;font-weight:600;color:var(--accent2);padding:8px 0;">📋 登録済み単語を見る</summary>
+      <div id="wordMasterDisplay" style="margin-top:8px;background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;padding:12px;max-height:300px;overflow-y:auto;display:flex;flex-wrap:wrap;gap:6px;"></div>
+    </details>
+
+    <!-- 入力エリア -->
+    <textarea id="wordMaster" rows="8" style="resize:vertical;min-height:160px;" placeholder="例：TruLaser Center 7030&#10;TruMatic 5000&#10;ローツェ&#10;牧野フライス a500Z&#10;Fit Scheduler&#10;RORZE ROBOTECH"></textarea>
+    <div style="font-size:11px;color:var(--text-muted);">1行1単語で入力。「保存する」ボタンで保存されます。</div>
+
     <button class="btn btn-primary" id="saveSettings">保存する</button>
 
     <div class="modal-divider"></div>
@@ -438,26 +522,18 @@
       </div>
     </div>
 
+
     <div class="modal-divider"></div>
 
-    <!-- バックアップ -->
+    <!-- バックアップ（一括） -->
     <div class="modal-section">💾 バックアップ</div>
-
-    <div style="font-size:12px;font-weight:600;color:var(--text-muted);">APIキー</div>
+    <div style="font-size:12px;color:var(--text-muted);line-height:1.6;margin-bottom:4px;">APIキー・設定・テンプレート・参加者マスター・単語マスターをすべて1ファイルで保存・復元します。</div>
     <div class="backup-row">
-      <button class="btn btn-secondary" id="exportApiBtn">📤 エクスポート</button>
-      <button class="btn btn-secondary" id="importApiBtn">📥 インポート</button>
-      <input type="file" id="importApiFile" accept=".json" style="display:none;">
+      <button class="btn btn-secondary" id="exportAllBtn">📤 一括エクスポート</button>
+      <button class="btn btn-secondary" id="importAllBtn">📥 一括インポート</button>
+      <input type="file" id="importAllFile" accept=".json" style="display:none;">
     </div>
     <div style="font-size:11px;color:var(--danger);line-height:1.5;">⚠️ APIキーが含まれます。取り扱いにご注意ください。</div>
-
-    <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-top:4px;">テンプレート</div>
-    <div class="backup-row">
-      <button class="btn btn-secondary" id="exportTplBtn">📤 エクスポート</button>
-      <button class="btn btn-secondary" id="importTplBtn">📥 インポート</button>
-      <input type="file" id="importTplFile" accept=".json" style="display:none;">
-    </div>
-    <div style="font-size:11px;color:var(--text-muted);line-height:1.5;">テンプレートのみ保存・復元します。</div>
 
     <button class="btn btn-ghost" id="cancelSettings">閉じる</button>
   </div>
@@ -683,97 +759,117 @@ function resetEditor() {
   document.getElementById('tplPrompt').value = '';
 }
 
-// ─── バックアップ：APIキー エクスポート ────────────
-document.getElementById('exportApiBtn').addEventListener('click', () => {
-  const data = {
-    type: 'nauto_api_keys',
-    version: '1.8.6',
-    exported_at: new Date().toISOString(),
-    my_name:      getMyName(),
-    groq_key:     getGroqKey(),
-    deepgram_key: getDeepgramKey(),
-    anthropic_key:getAnthropicKey(),
-    mail_to:      getMailTo(),
-    stt_service:  getSttService(),
-    groq_fallback:getGroqFallback(),
-  };
+// ─── 単語マスター ────────────────────────────────
+const getWordMaster = () => LS.get('word_master');
+
+// 単語マスターの登録済み表示（あいうえお順）
+function renderWordMasterDisplay() {
+  const display = document.getElementById('wordMasterDisplay');
+  if (!display) return;
+  const words = getWordMaster().split('\n').map(s=>s.trim()).filter(Boolean);
+  // あいうえお順（日本語・英語混在対応）
+  words.sort((a, b) => a.localeCompare(b, 'ja'));
+  display.innerHTML = '';
+  if (words.length === 0) {
+    const empty = document.createElement('div');
+    empty.style.cssText = 'font-size:13px;color:var(--text-muted);width:100%;';
+    empty.textContent = '登録された単語はありません';
+    display.appendChild(empty);
+    return;
+  }
+  words.forEach(word => {
+    const tag = document.createElement('div');
+    tag.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:12px;color:var(--text);';
+    tag.textContent = word;
+    display.appendChild(tag);
+  });
+}
+
+// detailsを開いた時に描画
+document.addEventListener('DOMContentLoaded', () => {
+  const details = document.getElementById('wordMasterDetails');
+  if (details) {
+    details.addEventListener('toggle', () => {
+      if (details.open) renderWordMasterDisplay();
+    });
+  }
+});
+
+// ─── バックアップ：一括エクスポート ──────────────
+function downloadJson(data, filename) {
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
-  a.href = url;
-  a.download = 'NAUTO API KEY ' + new Date().toISOString().slice(0,16).replace(/[-:T]/g,'').replace(/^(.{8})(.{4})$/, '$1_$2') + '.json';
+  a.href = url; a.download = filename;
   document.body.appendChild(a); a.click();
   document.body.removeChild(a); URL.revokeObjectURL(url);
-  showToast('APIキーをエクスポートしました');
+}
+
+function getDateStamp() {
+  return new Date().toISOString().slice(0,16).replace(/[-:T]/g,'').replace(/^(.{8})(.{4})$/, '$1_$2');
+}
+
+document.getElementById('exportAllBtn').addEventListener('click', () => {
+  const data = {
+    type: 'nauto_backup_all',
+    version: '1.9.3',
+    exported_at: new Date().toISOString(),
+    // 設定・APIキー
+    my_name:       getMyName(),
+    groq_key:      getGroqKey(),
+    deepgram_key:  getDeepgramKey(),
+    anthropic_key: getAnthropicKey(),
+    mail_to:       getMailTo(),
+    stt_service:   getSttService(),
+    groq_fallback: getGroqFallback(),
+    // データ
+    templates:     getTemplates(),
+    master_data:   LS.get('master_data'),
+    word_master:   getWordMaster(),
+  };
+  downloadJson(data, 'NAUTO BACKUP ' + getDateStamp() + '.json');
+  showToast('一括エクスポートしました');
 });
 
-// ─── バックアップ：APIキー インポート ────────────
-document.getElementById('importApiBtn').addEventListener('click', () => {
-  document.getElementById('importApiFile').click();
+// ─── バックアップ：一括インポート ──────────────
+document.getElementById('importAllBtn').addEventListener('click', () => {
+  document.getElementById('importAllFile').click();
 });
-document.getElementById('importApiFile').addEventListener('change', e => {
+document.getElementById('importAllFile').addEventListener('change', e => {
   const file = e.target.files[0]; if (!file) return;
   const reader = new FileReader();
   reader.onload = ev => {
     try {
       const data = JSON.parse(ev.target.result);
+      // 設定・APIキー
       if (data.my_name)       LS.set('my_name',       data.my_name);
-      if (data.groq_key)      LS.set('groq_key',      data.groq_key);
-      if (data.deepgram_key)  LS.set('deepgram_key',  data.deepgram_key);
-      if (data.anthropic_key) LS.set('anthropic_key', data.anthropic_key);
-      if (data.mail_to)       LS.set('mail_to',       data.mail_to);
-      if (data.stt_service)   LS.set('stt_service',   data.stt_service);
-      if (data.groq_fallback) LS.set('groq_fallback', data.groq_fallback);
+      if (data.groq_key)      LS.set('groq_key',       data.groq_key);
+      if (data.deepgram_key)  LS.set('deepgram_key',   data.deepgram_key);
+      if (data.anthropic_key) LS.set('anthropic_key',  data.anthropic_key);
+      if (data.mail_to)       LS.set('mail_to',        data.mail_to);
+      if (data.stt_service)   LS.set('stt_service',    data.stt_service);
+      if (data.groq_fallback) LS.set('groq_fallback',  data.groq_fallback);
+      // データ
+      if (data.templates)     saveTemplates(data.templates);
+      if (data.master_data)   LS.set('master_data',    data.master_data);
+      if (data.word_master)   LS.set('word_master',    data.word_master);
+      // 画面更新
       document.getElementById('settingMyName').value  = getMyName();
       document.getElementById('groqKey').value        = getGroqKey();
       document.getElementById('deepgramKey').value    = getDeepgramKey();
       document.getElementById('anthropicKey').value   = getAnthropicKey();
       document.getElementById('settingMailTo').value  = getMailTo();
+      document.getElementById('wordMaster').value     = getWordMaster();
       const svc = getSttService();
       document.querySelector(`input[name="sttService"][value="${svc}"]`).checked = true;
       const fb  = getGroqFallback();
       document.querySelector(`input[name="groqFallback"][value="${fb}"]`).checked = true;
       updateGroqFallbackVisibility();
-      updateMemberSelf(); updateApiStatus(); updateStartBtn();
-      showToast('APIキーをインポートしました');
-    } catch(err) { showToast('読み込みに失敗しました'); }
-    e.target.value = '';
-  };
-  reader.readAsText(file);
-});
-
-// ─── バックアップ：テンプレート エクスポート ────────
-document.getElementById('exportTplBtn').addEventListener('click', () => {
-  const data = {
-    type: 'nauto_templates',
-    version: '1.8.6',
-    exported_at: new Date().toISOString(),
-    templates: getTemplates(),
-  };
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href = url;
-  a.download = 'NAUTO TEMPLATE ' + new Date().toISOString().slice(0,16).replace(/[-:T]/g,'').replace(/^(.{8})(.{4})$/, '$1_$2') + '.json';
-  document.body.appendChild(a); a.click();
-  document.body.removeChild(a); URL.revokeObjectURL(url);
-  showToast('テンプレートをエクスポートしました');
-});
-
-// ─── バックアップ：テンプレート インポート ────────
-document.getElementById('importTplBtn').addEventListener('click', () => {
-  document.getElementById('importTplFile').click();
-});
-document.getElementById('importTplFile').addEventListener('change', e => {
-  const file = e.target.files[0]; if (!file) return;
-  const reader = new FileReader();
-  reader.onload = ev => {
-    try {
-      const data = JSON.parse(ev.target.result);
-      if (data.templates) saveTemplates(data.templates);
       renderTemplateList(); updateTemplateSelect();
-      showToast('テンプレートをインポートしました');
-    } catch(err) { showToast('読み込みに失敗しました'); }
+      ['customer','maker','self'].forEach(t => renderMasterList(t));
+      updateMemberSelf(); updateApiStatus(); updateStartBtn();
+      showToast('一括インポートしました');
+    } catch(err) { showToast('読み込みに失敗しました: ' + err.message); }
     e.target.value = '';
   };
   reader.readAsText(file);
@@ -841,19 +937,320 @@ function getMeetingDatetime() {
 
 // ─── 参加者 ──────────────────────────────────
 function updateMemberSelf() {
-  const name=getMyName(), el=document.getElementById('memberSelf');
-  el.textContent = name||'（設定から登録）';
-  el.style.color = name?'var(--accent2)':'var(--text-muted)';
+  // 自社の固定名はgetMembersText()内で自動追加
 }
+// ─── 参加者マルチ管理（お客様・同行者・自分） ───────────
+const members = { customer: [], companion: [] };
+
+// マスターデータ（統合：会社リスト）
+function getAllMasterData() {
+  try {
+    const raw = LS.get('master_data');
+    if (raw) {
+      const d = JSON.parse(raw);
+      // 旧形式（customer/maker/self）→新形式（companies）に移行
+      if (d.companies) return d;
+      const companies = [];
+      if (d.customer) d.customer.forEach(e => companies.push(e));
+      if (d.maker)    d.maker.forEach(e => companies.push(e));
+      return { companies };
+    }
+  } catch(e) {}
+  return { companies: [] };
+}
+
+function saveMasterData(data) {
+  LS.set('master_data', JSON.stringify(data));
+}
+
+// タグ描画
+function renderMemberTags(type) {
+  const list = document.getElementById(type + 'Tags');
+  if (!list) return;
+  list.innerHTML = '';
+  members[type].forEach((name, idx) => {
+    const tag = document.createElement('div');
+    tag.className = 'member-tag';
+    const txt = document.createElement('span'); txt.textContent = name;
+    const rm  = document.createElement('span');
+    rm.className = 'member-tag-remove'; rm.textContent = '✕';
+    rm.onclick = () => { members[type].splice(idx, 1); renderMemberTags(type); };
+    tag.appendChild(txt); tag.appendChild(rm);
+    list.appendChild(tag);
+  });
+}
+
+// 2段階選択：STEP1 会社選択
+function addMember(type) {
+  const wrap   = document.getElementById(type + 'SuggestWrap');
+  const suggest= document.getElementById(type + 'Suggest');
+  wrap.style.display = 'block';
+  showCompanyStep(type, suggest);
+}
+
+function showCompanyStep(type, suggest) {
+  const data = getAllMasterData();
+  const companies = data.companies || [];
+  suggest.innerHTML = '';
+
+  const header = document.createElement('div');
+  header.className = 'member-suggest-header';
+  header.textContent = '会社を選択';
+  suggest.appendChild(header);
+
+  companies.forEach(entry => {
+    const item = document.createElement('div');
+    item.className = 'member-suggest-item';
+    item.textContent = entry.company;
+    item.onclick = () => showPersonStep(type, suggest, entry.company, entry.persons);
+    suggest.appendChild(item);
+  });
+
+  const newItem = document.createElement('div');
+  newItem.className = 'member-suggest-new';
+  newItem.textContent = '＋ 新しい会社名を入力';
+  newItem.onclick = () => {
+    suggest.innerHTML = '';
+    const header = document.createElement('div');
+    header.className = 'member-suggest-header';
+    header.textContent = '新しい会社名を入力';
+    suggest.appendChild(header);
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;gap:6px;padding:10px;';
+    const inp = document.createElement('input');
+    inp.type='text'; inp.placeholder='会社名';
+    inp.style.cssText='flex:1;padding:8px 12px;font-size:14px;border:1.5px solid var(--accent2);border-radius:8px;outline:none;font-family:inherit;background:var(--surface);color:var(--text);min-width:0;';
+    const ok = document.createElement('button');
+    ok.textContent='決定'; ok.className='btn btn-primary btn-sm';
+    ok.style.flexShrink='0';
+    ok.onclick = () => { if(inp.value.trim()) showPersonStep(type, suggest, inp.value.trim(), []); };
+    inp.onkeydown = (e) => { if(e.key==='Enter') ok.onclick(); if(e.key==='Escape') showCompanyStep(type, suggest); };
+    row.appendChild(inp); row.appendChild(ok);
+    suggest.appendChild(row);
+    inp.focus();
+  };
+  suggest.appendChild(newItem);
+
+  closeOnOutside(type);
+}
+
+// STEP2 担当者選択
+function showPersonStep(type, suggest, company, persons) {
+  suggest.innerHTML = '';
+
+  const back = document.createElement('div');
+  back.className = 'member-suggest-back';
+  back.textContent = '← ' + company;
+  back.onclick = () => showCompanyStep(type, suggest);
+  suggest.appendChild(back);
+
+  persons.forEach(person => {
+    const item = document.createElement('div');
+    item.className = 'member-suggest-item';
+    item.textContent = person;
+    item.onclick = () => {
+      const fullName = company + ' ' + person;
+      if (!members[type].includes(fullName)) {
+        members[type].push(fullName);
+        renderMemberTags(type);
+      }
+      closeSuggest(type);
+    };
+    suggest.appendChild(item);
+  });
+
+  const newItem = document.createElement('div');
+  newItem.className = 'member-suggest-new';
+  newItem.textContent = '＋ 直接入力';
+  newItem.onclick = () => {
+    suggest.innerHTML = '';
+    const header = document.createElement('div');
+    header.className = 'member-suggest-header';
+    header.textContent = company + ' の担当者を入力';
+    suggest.appendChild(header);
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;gap:6px;padding:10px;';
+    const inp = document.createElement('input');
+    inp.type='text'; inp.placeholder='担当者名';
+    inp.style.cssText='flex:1;padding:8px 12px;font-size:14px;border:1.5px solid var(--accent2);border-radius:8px;outline:none;font-family:inherit;background:var(--surface);color:var(--text);min-width:0;';
+    const ok = document.createElement('button');
+    ok.textContent='追加'; ok.className='btn btn-primary btn-sm';
+    ok.style.flexShrink='0';
+    ok.onclick = () => {
+      if (!inp.value.trim()) return;
+      const fullName = company + ' ' + inp.value.trim();
+      if (!members[type].includes(fullName)) { members[type].push(fullName); renderMemberTags(type); }
+      closeSuggest(type);
+    };
+    inp.onkeydown = (e) => { if(e.key==='Enter') ok.onclick(); if(e.key==='Escape') showPersonStep(type, suggest, company, persons); };
+    row.appendChild(inp); row.appendChild(ok);
+    suggest.appendChild(row);
+    inp.focus();
+  };
+  suggest.appendChild(newItem);
+}
+
+function closeSuggest(type) {
+  const wrap = document.getElementById(type + 'SuggestWrap');
+  if (wrap) wrap.style.display = 'none';
+}
+
+function closeOnOutside(type) {
+  setTimeout(() => {
+    document.addEventListener('click', function handler(e) {
+      const wrap = document.getElementById(type + 'SuggestWrap');
+      if (wrap && !wrap.contains(e.target)) {
+        wrap.style.display = 'none';
+        document.removeEventListener('click', handler);
+      }
+    });
+  }, 100);
+}
+
 function getMembersText() {
-  const c=document.getElementById('memberCustomer').value.trim();
-  const mk=document.getElementById('memberMaker').value.trim();
-  const s=getMyName()||'（自分）';
-  const parts=[];
-  if(c) parts.push('お客様：'+c);
-  if(mk) parts.push('メーカー：'+mk);
-  parts.push('自社：'+s);
-  return parts.join('、');
+  const myName = getMyName();
+  const parts  = [];
+  if (members.customer.length > 0)  parts.push('お客様：' + members.customer.join('、'));
+  if (members.companion.length > 0) parts.push('同行者：' + members.companion.join('、'));
+  const selfName = myName ? myName + '（記）' : '（記）';
+  parts.push('自社：' + selfName);
+  return parts.join('　');
+}
+
+function resetMembers() {
+  members.customer  = [];
+  members.companion = [];
+  ['customer','companion'].forEach(t => {
+    renderMemberTags(t);
+    const wrap = document.getElementById(t + 'SuggestWrap');
+    if (wrap) wrap.style.display = 'none';
+  });
+}
+
+// 自分の名前表示更新
+function updateMemberSelf() {
+  const el = document.getElementById('memberSelf');
+  if (!el) return;
+  const name = getMyName();
+  el.textContent = name ? name + '（記）' : '（設定から登録）';
+}
+
+// ─── 設定画面：参加者マスター管理（統合） ───────────
+function renderMasterList() {
+  const listEl = document.getElementById('masterCompaniesList');
+  if (!listEl) return;
+  const data = getAllMasterData();
+  const companies = data.companies || [];
+  listEl.innerHTML = '';
+
+  companies.forEach((entry, cidx) => {
+    const block = document.createElement('div');
+    block.className = 'master-company-block';
+
+    const header = document.createElement('div');
+    header.className = 'master-company-header';
+    const nameInput = document.createElement('input');
+    nameInput.className = 'master-company-name';
+    nameInput.value = entry.company;
+    nameInput.placeholder = '会社名';
+    nameInput.onchange = () => {
+      const d = getAllMasterData();
+      d.companies[cidx].company = nameInput.value.trim();
+      saveMasterData(d);
+    };
+    const removeBtn = document.createElement('span');
+    removeBtn.className = 'master-company-remove';
+    removeBtn.textContent = '✕';
+    removeBtn.onclick = () => {
+      const d = getAllMasterData();
+      d.companies.splice(cidx, 1);
+      saveMasterData(d);
+      renderMasterList();
+    };
+    header.appendChild(nameInput);
+    header.appendChild(removeBtn);
+    block.appendChild(header);
+
+    const personsWrap = document.createElement('div');
+    personsWrap.className = 'master-persons';
+
+    entry.persons.forEach((person, pidx) => {
+      const ptag = document.createElement('div');
+      ptag.className = 'master-person-tag';
+      const ptxt = document.createElement('span'); ptxt.textContent = person;
+      const prm  = document.createElement('span');
+      prm.className = 'master-person-remove'; prm.textContent = '✕';
+      prm.onclick = () => {
+        const d = getAllMasterData();
+        d.companies[cidx].persons.splice(pidx, 1);
+        saveMasterData(d);
+        renderMasterList();
+      };
+      ptag.appendChild(ptxt); ptag.appendChild(prm);
+      personsWrap.appendChild(ptag);
+    });
+
+    const addBtn = document.createElement('button');
+    addBtn.className = 'master-add-person';
+    addBtn.textContent = '＋';
+    addBtn.onclick = () => {
+      // インライン入力エリアを動的生成
+      const existingRow = personsWrap.querySelector('.person-add-row');
+      if (existingRow) { existingRow.remove(); return; }
+      const addRow = document.createElement('div');
+      addRow.className = 'person-add-row';
+      addRow.style.cssText = 'display:flex;gap:6px;align-items:center;margin-top:4px;width:100%;';
+      const inp = document.createElement('input');
+      inp.type = 'text'; inp.placeholder = '担当者名';
+      inp.style.cssText = 'flex:1;padding:6px 10px;font-size:13px;border:1.5px solid var(--accent2);border-radius:8px;outline:none;font-family:inherit;background:var(--surface);color:var(--text);min-width:0;';
+      const confirmB = document.createElement('button');
+      confirmB.textContent = '追加'; confirmB.className = 'btn btn-primary btn-sm';
+      confirmB.style.cssText = 'flex-shrink:0;';
+      confirmB.onclick = () => {
+        if (!inp.value.trim()) return;
+        const d = getAllMasterData();
+        d.companies[cidx].persons.push(inp.value.trim());
+        saveMasterData(d);
+        renderMasterList();
+      };
+      const cancelB = document.createElement('button');
+      cancelB.textContent = '✕'; cancelB.className = 'btn btn-secondary btn-sm';
+      cancelB.style.cssText = 'flex-shrink:0;';
+      cancelB.onclick = () => addRow.remove();
+      inp.onkeydown = (e) => { if (e.key === 'Enter') confirmB.onclick(); if (e.key === 'Escape') addRow.remove(); };
+      addRow.appendChild(inp); addRow.appendChild(confirmB); addRow.appendChild(cancelB);
+      personsWrap.appendChild(addRow);
+      inp.focus();
+    };
+    personsWrap.appendChild(addBtn);
+    block.appendChild(personsWrap);
+    listEl.appendChild(block);
+  });
+}
+
+function showAddCompanyInput() {
+  const row = document.getElementById('masterAddRow');
+  const btn = document.getElementById('showMasterAddBtn');
+  row.style.display = 'flex';
+  btn.style.display = 'none';
+  document.getElementById('masterAddInput').focus();
+}
+
+function cancelAddCompany() {
+  document.getElementById('masterAddRow').style.display = 'none';
+  document.getElementById('showMasterAddBtn').style.display = 'block';
+  document.getElementById('masterAddInput').value = '';
+}
+
+function confirmAddCompany() {
+  const input = document.getElementById('masterAddInput');
+  const name  = input.value.trim();
+  if (!name) return;
+  const d = getAllMasterData();
+  d.companies.push({ company: name, persons: [] });
+  saveMasterData(d);
+  renderMasterList();
+  cancelAddCompany();
 }
 
 // ─── ステータス ───────────────────────────────
@@ -932,6 +1329,16 @@ function openModal() {
   document.getElementById('deepgramKey').value     = getDeepgramKey();
   document.getElementById('anthropicKey').value    = getAnthropicKey();
   document.getElementById('settingMailTo').value   = getMailTo();
+  document.getElementById('wordMaster').value     = getWordMaster();
+  renderWordMasterDisplay();
+  // 参加者マスターはdetails展開時に描画
+  const masterDetails = document.getElementById('masterDetails');
+  if (masterDetails) {
+    masterDetails.addEventListener('toggle', () => {
+      if (masterDetails.open) renderMasterList();
+    }, { once: false });
+    if (masterDetails.open) renderMasterList();
+  }
 
   // サービス選択を復元
   const svc = getSttService();
@@ -965,6 +1372,7 @@ document.getElementById('saveSettings').addEventListener('click',()=>{
   LS.set('deepgram_key',   document.getElementById('deepgramKey').value.trim());
   LS.set('anthropic_key',  document.getElementById('anthropicKey').value.trim());
   LS.set('mail_to',        document.getElementById('settingMailTo').value.trim());
+  LS.set('word_master',    document.getElementById('wordMaster').value.trim());
   LS.set('stt_service',    document.querySelector('input[name="sttService"]:checked')?.value || 'groq');
   LS.set('groq_fallback',  document.querySelector('input[name="groqFallback"]:checked')?.value || 'deepgram');
   closeModal(); updateMemberSelf(); updateApiStatus(); updateStartBtn();
@@ -1158,14 +1566,21 @@ async function generateMinutes(transcript, stepCur, stepTotal) {
   const datetime= getMeetingDatetime();
   const members = getMembersText();
   const topic   = document.getElementById('meetingTopic').value.trim()||'（未記入）';
+  const wordList = getWordMaster().split('\n').map(s=>s.trim()).filter(Boolean);
+  const wordSection = wordList.length > 0
+    ? `以下の専門用語・固有名詞を正確に使用してください：\n${wordList.join('、')}\n\n`
+    : '';
   const prompt  =
     `以下は製造業・工作機械業界の商談音声文字起こしです。\n`+
     `専門用語（CNC・ATC・マシニングセンタ・NC旋盤・パレットチェンジャー・ロボドリル・研削盤・放電加工機・BT30・HSK等）を正確に認識し、\n`+
     `テンプレートの指示に従って日本語で議事録を作成してください。\n`+
-    `文字起こしに含まれない内容は追加しないでください。\n`+
-    `マークダウン記法（#・##・**・*・---など）は一切使用しないでください。\n`+
-    `冒頭にタイトル行（# で始まる行）は不要です。\n`+
-    `テンプレートで指定したフォーマット以外のセクションは追加しないでください。\n\n`+
+    `【厳守事項】\n`+
+    `・文字起こしに含まれない内容は追加しないでください。\n`+
+    `・マークダウン記法（#・##・**・*・---など）は一切使用しないでください。\n`+
+    `・冒頭にタイトル行は不要です。\n`+
+    `・テンプレートで指定したセクション以外（■ 概要・■ まとめ等）は絶対に追加しないでください。\n`+
+    `・出力はテンプレートのフォーマットのみとし、余計なセクションは一切追加しないでください。\n\n`+
+    wordSection+
     `【会議情報】\n- 日時：${datetime}\n- 参加者：${members}\n- 議題：${topic}\n\n`+
     `【文字起こし】\n${transcript}\n\n---\n\n`+
     `【議事録作成の指示】\n${tpl.prompt}`;
@@ -1489,6 +1904,7 @@ document.getElementById('resetBtn').addEventListener('click',()=>{
   state.file=null; state.transcript=''; state.minutes='';
   state.textFile=null; state.chatHistory=[];
   isEditing=false;
+  resetMembers();
   document.getElementById('minutesResult').style.display='block';
   document.getElementById('minutesEdit').style.display='none';
   document.getElementById('editToggle').textContent='✏️ 編集';
@@ -1502,8 +1918,6 @@ document.getElementById('resetBtn').addEventListener('click',()=>{
   document.getElementById('fileName').textContent='';
   document.getElementById('fileSize').innerHTML='';
   document.getElementById('textFileName').textContent='';
-  document.getElementById('memberCustomer').value='';
-  document.getElementById('memberMaker').value='';
   document.getElementById('meetingTopic').value='';
   clearError('fileError'); clearError('processError');
   setupDateTime(); setStep(1); updateStartBtn();
