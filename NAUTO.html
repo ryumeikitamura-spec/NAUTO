@@ -22,25 +22,35 @@
   html { background: #f0f6ff !important; background-color: #f0f6ff !important; }
 
   /* ヘッダー */
-  .header { padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: var(--accent); z-index: 100; }
-  .header-left { display: flex; flex-direction: column; gap: 3px; }
-  .header-title { font-size: 24px; font-weight: 700; color: #fff; letter-spacing: 3px; line-height: 1; }
+  .header { padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: var(--accent); z-index: 100; }
+  .header-left { display: flex; flex-direction: column; gap: 2px; }
+  .header-title { font-size: 22px; font-weight: 700; color: #fff; letter-spacing: 3px; line-height: 1; }
   .header-catch { font-size: 10px; color: rgba(164,216,244,0.8); letter-spacing: 1.8px; text-transform: uppercase; }
-  .header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
-  .header-version { font-size: 10px; color: rgba(255,255,255,0.4); font-family: 'DM Mono', monospace; letter-spacing: 1px; }
-  .settings-btn { width: 40px; height: 40px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 20px; flex-shrink: 0; }
+  .header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+  .header-version { font-size: 9px; color: rgba(255,255,255,0.4); font-family: 'DM Mono', monospace; letter-spacing: 1px; }
+  .settings-btn { width: 34px; height: 34px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); border-radius: 9px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 17px; flex-shrink: 0; }
 
   /* ステップ */
-  .steps { display: flex; padding: 12px 20px; gap: 6px; background: var(--surface); border-bottom: 1px solid var(--border); }
-  .step { flex: 1; height: 4px; background: var(--border); border-radius: 2px; transition: background 0.3s; }
-  .step.active { background: var(--accent2); }
-  .step.done { background: var(--accent-light); }
+  .steps { display: flex; padding: 16px 20px; gap: 0; background: var(--surface); border-bottom: 1px solid var(--border); align-items: center; }
+  .step { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; position: relative; }
+  .step:not(:last-child)::after { content: ''; position: absolute; top: 14px; left: 60%; width: 80%; height: 2px; background: var(--border); }
+  .step.done:not(:last-child)::after { background: var(--accent2); }
+  .step-num { width: 28px; height: 28px; border-radius: 50%; background: var(--border); color: var(--text-muted); font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; z-index: 1; transition: all 0.3s; }
+  .step.active .step-num { background: var(--accent2); color: #fff; box-shadow: 0 2px 8px rgba(44,115,210,0.4); }
+  .step.done .step-num { background: var(--accent2); color: #fff; }
+  .step-label { font-size: 10px; font-weight: 600; color: var(--text-muted); letter-spacing: 0.3px; white-space: nowrap; }
+  .step.active .step-label { color: var(--accent2); }
+  .step.done .step-label { color: var(--accent2); }
 
-  .content { padding: 20px; display: flex; flex-direction: column; gap: 18px; padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
+  .content { padding: 16px; display: flex; flex-direction: column; gap: 12px; padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
   .panel { display: none; flex-direction: column; gap: 18px; }
   .panel.active { display: flex; }
 
   .section-title { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  /* セクションカード */
+  .section-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: 16px; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 1px 4px rgba(14,30,61,0.04); }
+  .section-card-header { display: flex; align-items: center; justify-content: space-between; }
+  .section-card-title { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px; color: var(--text); }
   .label { font-size: 11px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; }
   .input-group { display: flex; flex-direction: column; }
 
@@ -68,7 +78,7 @@
   .member-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); overflow: hidden; }
   .member-row { display: flex; align-items: center; padding: 14px 16px; gap: 12px; border-bottom: 1px solid var(--border); }
   .member-row:last-child { border-bottom: none; }
-  .member-role { font-size: 12px; font-weight: 600; color: var(--text-muted); min-width: 52px; }
+  .member-role { font-size: 15px; font-weight: 700; color: var(--accent); min-width: 52px; }
   .member-input { flex: 1; background: transparent; border: none; padding: 0; font-size: 15px; font-family: 'Noto Sans JP', sans-serif; color: var(--text); outline: none; }
   .member-input::placeholder { color: var(--text-muted); }
   .member-fixed { flex: 1; font-size: 15px; font-weight: 500; color: var(--accent2); }
@@ -182,7 +192,7 @@
   .service-radio-desc  { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
 
   /* 参加者マルチカード */
-  .member-multi-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); overflow: visible; display: flex; flex-direction: column; }
+  .member-multi-card { background: transparent; border: none; border-radius: 0; overflow: visible; display: flex; flex-direction: column; }
   .member-multi-section { padding: 12px 16px; border-bottom: 1px solid var(--border); }
   .member-multi-section:last-child { border-bottom: none; }
   .member-multi-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
@@ -222,15 +232,24 @@
     <div class="header-catch">Less Writing. More Talking.</div>
   </div>
   <div class="header-right">
-    <div class="header-version">v2.2.8d</div>
+    <div class="header-version">v2.3.7</div>
     <div class="settings-btn" id="settingsBtn">⚙️</div>
   </div>
 </div>
 
 <div class="steps">
-  <div class="step active" id="step1"></div>
-  <div class="step" id="step2"></div>
-  <div class="step" id="step3"></div>
+  <div class="step active" id="step1">
+    <div class="step-num">1</div>
+    <div class="step-label">アップロード</div>
+  </div>
+  <div class="step" id="step2">
+    <div class="step-num">2</div>
+    <div class="step-label">文字起こし</div>
+  </div>
+  <div class="step" id="step3">
+    <div class="step-num">3</div>
+    <div class="step-label">議事録作成</div>
+  </div>
 </div>
 
 <div class="content">
@@ -238,16 +257,21 @@
   <!-- パネル1：入力 -->
   <div class="panel active" id="panel1">
 
-    <div class="section-title">📅 日付</div>
-    <div class="drum-row" id="dateRow"></div>
+    <div class="section-card">
+      <div class="section-card-title">📅 日付</div>
+      <div class="drum-row" id="dateRow"></div>
+    </div>
 
-    <div class="divider"></div>
-    <div class="section-title">💬 議題</div>
-    <input class="member-input" id="meetingTopic" type="text" placeholder="例：CNC加工機の選定について" style="background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:14px 16px;width:100%;">
+    <div class="section-card">
+      <div class="section-card-title">💬 議題</div>
+      <input class="member-input" id="meetingTopic" type="text" placeholder="例：関ヶ原における布陣の最終確認🏯" style="background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:13px 16px;width:100%;">
+    </div>
 
-    <div class="divider"></div>
-    <div class="section-title">👥 参加者</div>
-    <div class="member-multi-card">
+    <div class="section-card" style="padding:0;overflow:hidden;">
+      <div class="section-card-header" style="padding:16px 18px 0;">
+        <div class="section-card-title">👥 参加者</div>
+      </div>
+      <div class="member-multi-card" style="border:none;border-radius:0;box-shadow:none;margin-top:12px;">
       <!-- お客様 -->
       <div class="member-multi-section">
         <div class="member-multi-header">
@@ -279,19 +303,22 @@
           <div class="member-badge">固定・記</div>
         </div>
       </div>
+      </div>
     </div>
 
-    <div class="divider"></div>
-    <div class="section-title">📋 議事録テンプレート</div>
+    <div class="section-card">
+      <div class="section-card-title">📋 議事録テンプレート</div>
     <select class="styled" id="templateSelect"></select>
 
-    <div class="divider"></div>
-    <div class="section-title">🎵 音声ファイル</div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-card-title">🎵 音声ファイル</div>
     <div class="file-zone" id="fileZone">
       <input type="file" id="audioFile" accept="audio/*,.m4a,.mp3,.wav,.webm,.mp4">
       <div class="file-icon">🎙</div>
       <div style="font-size:15px;font-weight:500;">タップしてファイルを選択</div>
-      <div class="file-hint">m4a / mp3 / wav（最大100MB・約3.5時間）</div>
+      <div class="file-hint">m4a / mp3 / wav<br>（最大100MB・約3.5時間）</div>
       <div class="file-name" id="fileName"></div>
       <div id="fileSize"></div>
     </div>
@@ -304,15 +331,17 @@
     </div>
     <div class="file-zone" id="textZone" style="padding:20px;">
       <input type="file" id="textFile" accept=".txt,.md,.text">
-      <div style="font-size:14px;font-weight:500;">📄 文字起こしテキストをアップロード</div>
+      <div style="font-size:15px;font-weight:500;">📄 文字起こしをアップロード</div>
       <div class="file-hint">音声なしで議事録のみ生成</div>
       <div class="file-name" id="textFileName"></div>
+    </div>
+
     </div>
 
     <div class="error-box" id="fileError"></div>
     <div class="api-status" id="apiStatus"></div>
 
-    <button class="btn btn-primary" id="startBtn" disabled>文字起こしを開始 →</button>
+    <button class="btn btn-primary" id="startBtn" disabled style="font-size:17px;padding:18px;border-radius:16px;letter-spacing:0.5px;">✦ 文字起こしを開始 →</button>
     <div style="text-align:center;font-size:11px;color:var(--text-muted);padding-top:8px;letter-spacing:0.5px;">© 2026 Arumatik</div>
   </div>
 
@@ -388,11 +417,11 @@
       <div style="margin-top:8px;">
         <div class="input-group">
           <div class="label">自分の名前</div>
-          <input type="text" id="settingMyName" placeholder="例：北村" autocorrect="off">
+          <input type="text" id="settingMyName" placeholder="例：徳川家康" autocorrect="off">
         </div>
         <div class="input-group">
           <div class="label">所属会社</div>
-          <input type="text" id="settingMyCompany" placeholder="例：関東物産" autocorrect="off">
+          <input type="text" id="settingMyCompany" placeholder="例：江戸幕府" autocorrect="off">
         </div>
         <div style="font-size:12px;color:var(--text-muted);">同じ会社の人には「様」が付きません</div>
       </div>
@@ -406,7 +435,7 @@
       <div style="font-size:12px;color:var(--text-muted);margin:6px 0 8px;">会社名と担当者を登録。お客様・同行者の選択時に使用されます。</div>
       <div class="master-list" id="masterCompaniesList"></div>
       <div class="master-add-row" id="masterAddRow" style="display:none;margin-top:8px;gap:8px;align-items:center;">
-        <input type="text" id="masterAddInput" placeholder="会社名を入力" style="flex:1;padding:10px 14px;font-size:14px;border:1.5px solid var(--accent2);border-radius:10px;outline:none;background:var(--surface);color:var(--text);font-family:'Noto Sans JP',sans-serif;">
+        <input type="text" id="masterAddInput" placeholder="例：豊臣家" style="flex:1;padding:10px 14px;font-size:14px;border:1.5px solid var(--accent2);border-radius:10px;outline:none;background:var(--surface);color:var(--text);font-family:'Noto Sans JP',sans-serif;">
         <button class="btn btn-primary btn-sm" onclick="confirmAddCompany()">追加</button>
         <button class="btn btn-secondary btn-sm" onclick="cancelAddCompany()">取消</button>
       </div>
@@ -420,7 +449,7 @@
       <summary><span>📖 単語マスタ</span></summary>
       <div style="font-size:12px;color:var(--text-muted);margin:8px 0 6px;">専門用語・製品名・固有名詞を登録。議事録生成時にClaudeへ自動的に渡されます。</div>
       <div id="wordMasterDisplay" style="margin-top:8px;background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;padding:12px;max-height:200px;overflow-y:auto;display:flex;flex-wrap:wrap;gap:6px;"></div>
-      <textarea id="wordMaster" rows="6" style="resize:vertical;min-height:120px;margin-top:8px;" placeholder="例：TruLaser Center 7030&#10;TruMatic 5000&#10;ローツェ&#10;牧野フライス a500Z&#10;Fit Scheduler&#10;RORZE ROBOTECH"></textarea>
+      <textarea id="wordMaster" rows="6" style="resize:vertical;min-height:120px;margin-top:8px;" placeholder="例：関ヶ原&#10;大阪の陣&#10;征夷大将軍&#10;本能寺&#10;天下統一&#10;江戸幕府"></textarea>
       <div style="font-size:11px;color:var(--text-muted);">1行1単語で入力。「保存する」ボタンで保存されます。</div>
     </details>
 
@@ -666,6 +695,7 @@ const getGroqKey       = () => LS.get('groq_key');
 const getDeepgramKey   = () => LS.get('deepgram_key');
 const getAnthropicKey  = () => LS.get('anthropic_key');
 const getMailTo        = () => LS.get('mail_to');
+const getSttService    = () => LS.get('stt_service') || 'groq';
 const getDiarize       = () => LS.get('diarize') === 'true';
 const getGroqFallback  = () => LS.get('groq_fallback') || 'deepgram';
 
@@ -1362,6 +1392,8 @@ function updateApiStatus() {
     `<span class="tag ${n?'ok':'bad'}">${n ? '✓ '+n : '✗ 名前未設定'}</span>` +
     `<span class="tag ${svcOk?'ok':'bad'}">${svcOk ? '✓ '+svcLabel : '✗ '+svcLabel+'未設定'}</span>` +
     `<span class="tag ${a?'ok':'bad'}">${a ? '✓ Anthropic' : '✗ Anthropic未設定'}</span>`;
+  // スタイル更新
+  document.getElementById('apiStatus').style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;padding:4px 0;';
 }
 function updateStartBtn() {
   const svc      = getSttService();
@@ -2077,22 +2109,17 @@ document.getElementById('resetBtn').addEventListener('click',()=>{
 });
 
 // ─── 初期化 ──────────────────────────────────
-try {
-  initTemplates();
-  setupDateTime();
-  updateMemberSelf();
-  updateApiStatus();
-  updateStartBtn();
-  updateTemplateSelect();
+initTemplates();
+setupDateTime();
+updateMemberSelf();
+updateApiStatus();
+updateStartBtn();
+updateTemplateSelect();
 
-  // 参加者追加ボタンのイベント登録
-  document.getElementById('addCustomerBtn').addEventListener('click', () => showPicker('customer'));
-  document.getElementById('addCompanionBtn').addEventListener('click', () => showPicker('companion'));
-  document.getElementById('addColleagueBtn').addEventListener('click', () => showColleaguePicker());
-} catch(e) {
-  // エラー内容をアラートで表示（デバッグ用）
-  alert('初期化エラー: ' + e.message + '\n' + e.stack);
-}
+// 参加者追加ボタンのイベント登録
+document.getElementById('addCustomerBtn').addEventListener('click', () => showPicker('customer'));
+document.getElementById('addCompanionBtn').addEventListener('click', () => showPicker('companion'));
+document.getElementById('addColleagueBtn').addEventListener('click', () => showColleaguePicker());
 </script>
 </body>
 </html>
