@@ -222,7 +222,7 @@
     <div class="header-catch">Less Writing. More Talking.</div>
   </div>
   <div class="header-right">
-    <div class="header-version">v2.1.9</div>
+    <div class="header-version">v2.2.0</div>
     <div class="settings-btn" id="settingsBtn">⚙️</div>
   </div>
 </div>
@@ -1649,7 +1649,11 @@ async function transcribeWithDeepgram(file) {
 
 // ─── Claude議事録生成（共通化） ──────────────────
 async function generateMinutes(transcript, stepCur, stepTotal) {
-  setProgress(0, '🤖 議事録を生成中...', 'Claude APIで整形しています', stepCur, stepTotal);
+  setProgress(0, '🤖 議事録を生成中...', '', stepCur, stepTotal);
+  // 議事録生成の疑似プログレス（推定30秒）
+  const claudeTimer = startFakeUploadProgress(0, 100, 30,
+    pct => `🤖 議事録を生成中... ${pct}%`
+  );
   const tpl     = getSelectedTemplate();
   const datetime= getMeetingDatetime();
   const members = getMembersText();
@@ -1683,10 +1687,12 @@ async function generateMinutes(transcript, stepCur, stepTotal) {
       signal: ctrl.signal,
     });
   } catch(err) {
+    clearInterval(claudeTimer);
     if (err.name === 'AbortError') throw new Error('タイムアウト：Claude APIからの応答がありません。');
     throw err;
   } finally { clearTimeout(tid); }
   if (!cr.ok) { const e=await cr.json().catch(()=>({})); throw new Error('Claude APIエラー: '+(e?.error?.message||cr.status)); }
+  clearInterval(claudeTimer);
   const cd = await cr.json();
   return { text: cd.content?.[0]?.text || '（生成失敗）', usage: cd.usage };
 }
