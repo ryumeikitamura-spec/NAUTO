@@ -218,7 +218,7 @@
     <div class="header-catch">Less Writing. More Talking.</div>
   </div>
   <div class="header-right">
-    <div class="header-version">v2.0.4</div>
+    <div class="header-version">v2.0.7</div>
     <div class="settings-btn" id="settingsBtn">⚙️</div>
   </div>
 </div>
@@ -258,11 +258,20 @@
         <div class="member-tag-list" id="companionTags"></div>
         <div class="member-picker" id="companionPicker" style="display:none;"></div>
       </div>
+      <!-- 自社 -->
+      <div class="member-multi-section">
+        <div class="member-multi-header">
+          <div class="member-role">自社</div>
+          <button class="member-add-btn" id="addColleagueBtn">＋ 追加</button>
+        </div>
+        <div class="member-tag-list" id="colleagueTags"></div>
+        <div class="member-picker" id="colleaguePicker" style="display:none;"></div>
+      </div>
       <!-- 自分（固定） -->
       <div class="member-multi-section">
         <div class="member-multi-header">
           <div class="member-role">自分</div>
-          <div class="member-badge">固定</div>
+          <div class="member-badge">固定・記</div>
         </div>
         <div class="member-fixed" id="memberSelf" style="font-size:14px;font-weight:500;color:var(--accent2);padding:4px 0;">（設定から登録）</div>
       </div>
@@ -380,9 +389,13 @@
     <div class="modal-section">👤 基本設定</div>
     <div class="input-group">
       <div class="label">自分の名前</div>
-      <input type="text" id="settingMyName" placeholder="例：関東物産 May" autocorrect="off">
+      <input type="text" id="settingMyName" placeholder="例：北村" autocorrect="off">
     </div>
-    <div style="font-size:12px;color:var(--text-muted);">議事録の参加者欄に自動で表示されます</div>
+    <div class="input-group">
+      <div class="label">所属会社</div>
+      <input type="text" id="settingMyCompany" placeholder="例：関東物産" autocorrect="off">
+    </div>
+    <div style="font-size:12px;color:var(--text-muted);">同じ会社の人には「様」が付きません</div>
 
     <div class="modal-divider"></div>
 
@@ -628,6 +641,7 @@ const LS = {
   remove: k => localStorage.removeItem(k),
 };
 const getMyName        = () => LS.get('my_name');
+const getMyCompany     = () => LS.get('my_company');
 const getGroqKey       = () => LS.get('groq_key');
 const getDeepgramKey   = () => LS.get('deepgram_key');
 const getAnthropicKey  = () => LS.get('anthropic_key');
@@ -814,6 +828,7 @@ document.getElementById('exportAllBtn').addEventListener('click', () => {
     exported_at: new Date().toISOString(),
     // 設定・APIキー
     my_name:       getMyName(),
+    my_company:    getMyCompany(),
     groq_key:      getGroqKey(),
     deepgram_key:  getDeepgramKey(),
     anthropic_key: getAnthropicKey(),
@@ -841,6 +856,7 @@ document.getElementById('importAllFile').addEventListener('change', e => {
       const data = JSON.parse(ev.target.result);
       // 設定・APIキー
       if (data.my_name)       LS.set('my_name',       data.my_name);
+      if (data.my_company)    LS.set('my_company',    data.my_company);
       if (data.groq_key)      LS.set('groq_key',       data.groq_key);
       if (data.deepgram_key)  LS.set('deepgram_key',   data.deepgram_key);
       if (data.anthropic_key) LS.set('anthropic_key',  data.anthropic_key);
@@ -852,8 +868,9 @@ document.getElementById('importAllFile').addEventListener('change', e => {
       if (data.master_data)   LS.set('master_data',    data.master_data);
       if (data.word_master)   LS.set('word_master',    data.word_master);
       // 画面更新
-      document.getElementById('settingMyName').value  = getMyName();
-      document.getElementById('groqKey').value        = getGroqKey();
+      document.getElementById('settingMyName').value    = getMyName();
+      document.getElementById('settingMyCompany').value = getMyCompany();
+      document.getElementById('groqKey').value          = getGroqKey();
       document.getElementById('deepgramKey').value    = getDeepgramKey();
       document.getElementById('anthropicKey').value   = getAnthropicKey();
       document.getElementById('settingMailTo').value  = getMailTo();
@@ -938,7 +955,7 @@ function updateMemberSelf() {
   // 自社の固定名はgetMembersText()内で自動追加
 }
 // ─── 参加者マルチ管理（お客様・同行者・自分） ───────────
-const members = { customer: [], companion: [] };
+const members = { customer: [], companion: [], colleague: [] };
 
 // マスターデータ（統合：会社リスト）
 function getAllMasterData() {
@@ -1024,8 +1041,10 @@ function renderCompanyList(type, picker) {
   ok.style.cssText='flex-shrink:0;padding:8px 12px;';
   ok.addEventListener('click', () => {
     if (!inp.value.trim()) return;
-    if (!members[type].includes(inp.value.trim())) {
-      members[type].push(inp.value.trim());
+    const val = inp.value.trim();
+    const tagged = val + '様';
+    if (!members[type].includes(tagged)) {
+      members[type].push(tagged);
       renderMemberTags(type);
     }
     picker.style.display = 'none';
@@ -1049,7 +1068,7 @@ function renderPersonList(type, picker, company, persons) {
     item.style.cssText = 'padding:12px 16px;font-size:14px;cursor:pointer;border-bottom:1px solid var(--border);';
     item.textContent = person;
     item.addEventListener('click', () => {
-      const fullName = company + ' ' + person;
+      const fullName = company + ' ' + person + '様';
       if (!members[type].includes(fullName)) {
         members[type].push(fullName);
         renderMemberTags(type);
@@ -1080,19 +1099,27 @@ function renderPersonList(type, picker, company, persons) {
 }
 
 function getMembersText() {
-  const myName = getMyName();
-  const parts  = [];
-  if (members.customer.length > 0)  parts.push('お客様：' + members.customer.join('、'));
-  if (members.companion.length > 0) parts.push('同行者：' + members.companion.join('、'));
-  const selfName = myName ? myName + '（記）' : '（記）';
-  parts.push('自社：' + selfName);
+  const myName    = getMyName();
+  const myCompany = getMyCompany();
+  const parts     = [];
+
+  if (members.customer.length > 0)   parts.push('お客様：' + members.customer.join('、'));
+  if (members.companion.length > 0)  parts.push('同行者：' + members.companion.join('、'));
+
+  // 自社：同僚 + 自分（記）が最後
+  const selfList = [...members.colleague];
+  const selfLabel = myName ? (myCompany ? myCompany + ' ' : '') + myName + '（記）' : '（記）';
+  selfList.push(selfLabel);
+  parts.push('自社：' + selfList.join('、'));
+
   return parts.join('　');
 }
 
 function resetMembers() {
   members.customer  = [];
   members.companion = [];
-  ['customer','companion'].forEach(t => {
+  members.colleague = [];
+  ['customer','companion','colleague'].forEach(t => {
     renderMemberTags(t);
     const p = document.getElementById(t + 'Picker');
     if (p) p.style.display = 'none';
@@ -1225,6 +1252,67 @@ function confirmAddCompany() {
   cancelAddCompany();
 }
 
+// 自社ピッカー（自社会社名固定・様なし）
+function showColleaguePicker() {
+  const picker = document.getElementById('colleaguePicker');
+  if (!picker) return;
+  if (picker.style.display === 'block') { picker.style.display = 'none'; return; }
+  ['customer','companion'].forEach(t => {
+    const p = document.getElementById(t + 'Picker');
+    if (p) p.style.display = 'none';
+  });
+  picker.style.display = 'block';
+  picker.innerHTML = '';
+  picker.style.cssText = 'display:block;background:var(--surface);border:1.5px solid var(--accent2);border-radius:12px;overflow:hidden;margin-top:6px;';
+
+  const myCompany = getMyCompany();
+  const data      = getAllMasterData();
+  const entry     = data.companies.find(c => c.company === myCompany);
+  const persons   = entry ? entry.persons : [];
+
+  const header = document.createElement('div');
+  header.style.cssText = 'padding:8px 14px;font-size:11px;font-weight:700;color:var(--text-muted);background:var(--surface2);border-bottom:1px solid var(--border);letter-spacing:0.5px;';
+  header.textContent = myCompany || '自社';
+  picker.appendChild(header);
+
+  persons.forEach(person => {
+    const item = document.createElement('div');
+    item.style.cssText = 'padding:12px 16px;font-size:14px;cursor:pointer;border-bottom:1px solid var(--border);';
+    item.textContent = person;
+    item.addEventListener('click', () => {
+      const fullName = (myCompany ? myCompany + ' ' : '') + person; // 様なし
+      if (!members.colleague.includes(fullName)) {
+        members.colleague.push(fullName);
+        renderMemberTags('colleague');
+      }
+      picker.style.display = 'none';
+    });
+    picker.appendChild(item);
+  });
+
+  // 直接入力
+  const directRow = document.createElement('div');
+  directRow.style.cssText = 'padding:10px;display:flex;gap:6px;border-top:1px solid var(--border);';
+  const inp = document.createElement('input');
+  inp.type = 'text'; inp.placeholder = '氏名を入力';
+  inp.style.cssText = 'flex:1;padding:8px 12px;font-size:13px;border:1.5px solid var(--border);border-radius:8px;outline:none;font-family:inherit;background:var(--surface);color:var(--text);min-width:0;';
+  const ok = document.createElement('button');
+  ok.textContent = '追加'; ok.className = 'btn btn-primary btn-sm';
+  ok.style.cssText = 'flex-shrink:0;padding:8px 12px;';
+  ok.addEventListener('click', () => {
+    if (!inp.value.trim()) return;
+    const fullName = (myCompany ? myCompany + ' ' : '') + inp.value.trim(); // 様なし
+    if (!members.colleague.includes(fullName)) {
+      members.colleague.push(fullName);
+      renderMemberTags('colleague');
+    }
+    picker.style.display = 'none';
+  });
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') ok.click(); });
+  directRow.appendChild(inp); directRow.appendChild(ok);
+  picker.appendChild(directRow);
+}
+
 // ─── ステータス ───────────────────────────────
 function updateApiStatus() {
   const svc = getSttService();
@@ -1296,7 +1384,8 @@ function clearError(id){document.getElementById(id).classList.remove('visible');
 
 // ─── モーダル ────────────────────────────────
 function openModal() {
-  document.getElementById('settingMyName').value  = getMyName();
+  document.getElementById('settingMyName').value    = getMyName();
+  document.getElementById('settingMyCompany').value = getMyCompany();
   document.getElementById('groqKey').value         = getGroqKey();
   document.getElementById('deepgramKey').value     = getDeepgramKey();
   document.getElementById('anthropicKey').value    = getAnthropicKey();
@@ -1340,6 +1429,7 @@ document.getElementById('modalOverlay').addEventListener('click', e => {
 });
 document.getElementById('saveSettings').addEventListener('click',()=>{
   LS.set('my_name',        document.getElementById('settingMyName').value.trim());
+  LS.set('my_company',     document.getElementById('settingMyCompany').value.trim());
   LS.set('groq_key',       document.getElementById('groqKey').value.trim());
   LS.set('deepgram_key',   document.getElementById('deepgramKey').value.trim());
   LS.set('anthropic_key',  document.getElementById('anthropicKey').value.trim());
@@ -1907,6 +1997,7 @@ updateGroqFallbackVisibility();
 // 参加者追加ボタンのイベント登録
 document.getElementById('addCustomerBtn').addEventListener('click', () => showPicker('customer'));
 document.getElementById('addCompanionBtn').addEventListener('click', () => showPicker('companion'));
+document.getElementById('addColleagueBtn').addEventListener('click', () => showColleaguePicker());
 </script>
 </body>
 </html>
