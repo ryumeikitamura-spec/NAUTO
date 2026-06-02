@@ -222,7 +222,7 @@
     <div class="header-catch">Less Writing. More Talking.</div>
   </div>
   <div class="header-right">
-    <div class="header-version">v2.2.2</div>
+    <div class="header-version">v2.2.3</div>
     <div class="settings-btn" id="settingsBtn">⚙️</div>
   </div>
 </div>
@@ -1521,6 +1521,13 @@ async function transcribeBlob(blob, filename) {
   formData.append('model', 'whisper-large-v3');
   formData.append('language', 'ja');
   formData.append('response_format', 'text');
+
+  // ③ 単語マスタをGroqのpromptパラメータに渡す（専門用語の認識精度向上）
+  const wordList = getWordMaster().split('\n').map(s=>s.trim()).filter(Boolean);
+  if (wordList.length > 0) {
+    formData.append('prompt', wordList.join('、'));
+  }
+
   const controller = new AbortController();
   const timeoutId  = setTimeout(() => controller.abort(), 10 * 60 * 1000);
   try {
@@ -1615,15 +1622,27 @@ async function transcribeWithDeepgram(file) {
 
   // ファイル拡張子からContent-Typeを決定
   const name = file.name.toLowerCase();
-  let contentType = 'audio/mp4'; // デフォルト（m4a）
+  let contentType = 'audio/mp4';
   if (name.endsWith('.mp3'))  contentType = 'audio/mpeg';
   if (name.endsWith('.wav'))  contentType = 'audio/wav';
   if (name.endsWith('.webm')) contentType = 'audio/webm';
   if (name.endsWith('.mp4'))  contentType = 'audio/mp4';
 
+  // ② 単語マスタをDeepgramのkeywordsパラメータに渡す
+  const wordList = getWordMaster().split('\n').map(s=>s.trim()).filter(Boolean);
+  const keywordsParam = wordList.map(w => `keywords=${encodeURIComponent(w)}:1`).join('&');
+
+  // ① 話者識別（diarize=true）+ キーターム
+  const params = [
+    'model=nova-3',
+    'language=ja',
+    'smart_format=false',
+    'diarize=true',
+    keywordsParam,
+  ].filter(Boolean).join('&');
+
   try {
-    // smart_format=falseで日本語の誤補完を防ぐ
-    const res = await fetch('https://api.deepgram.com/v1/listen?model=nova-3&language=ja&smart_format=false', {
+    const res = await fetch(`https://api.deepgram.com/v1/listen?${params}`, {
       method: 'POST',
       headers: {
         'Authorization': 'Token ' + getDeepgramKey(),
@@ -1634,10 +1653,30 @@ async function transcribeWithDeepgram(file) {
     });
     if (!res.ok) {
       const e = await res.json().catch(() => ({}));
-      // Deepgramはerr_msg、message、reason等でエラーを返す
       throw new Error('Deepgram APIエラー: ' + (e?.err_msg || e?.message || e?.reason || res.status));
     }
     const data = await res.json();
+
+    // 話者識別結果をテキスト化
+    const words = data?.results?.channels?.[0]?.alternatives?.[0]?.words || [];
+    if (words.length > 0 && words[0].speaker !== undefined) {
+      // 話者ごとにまとめてテキスト化
+      let transcript = '';
+      let currentSpeaker = null;
+      let currentText = '';
+      words.forEach(w => {
+        if (w.speaker !== currentSpeaker) {
+          if (currentText.trim()) transcript += `話者${currentSpeaker}：${currentText.trim()}\n`;
+          currentSpeaker = w.speaker;
+          currentText = '';
+        }
+        currentText += w.punctuated_word || w.word || '';
+        currentText += ' ';
+      });
+      if (currentText.trim()) transcript += `話者${currentSpeaker}：${currentText.trim()}`;
+      return transcript;
+    }
+    // 話者識別なしの場合は通常テキスト
     return data?.results?.channels?.[0]?.alternatives?.[0]?.transcript || '';
   } catch(err) {
     if (err.name === 'AbortError') throw new Error('タイムアウト：Deepgram APIからの応答がありません。');
