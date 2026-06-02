@@ -127,7 +127,7 @@
   .stats-row { display: flex; gap: 8px; flex-wrap: wrap; }
 
   /* エラー・ヒント */
-  .error-box { background: rgba(217,48,48,0.07); border: 1px solid var(--danger); border-radius: var(--radius); padding: 13px 15px; font-size: 13px; color: var(--danger); display: none; line-height: 1.6; }
+  .error-box { display: none; }
   .error-box.visible { display: block; }
   .divider { height: 1px; background: var(--border); }
 
@@ -219,6 +219,18 @@
   .member-self-fixed { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
   .member-fixed { font-size: 14px; font-weight: 500; color: var(--accent2); }
 
+  /* マニュアル・エラーカード */
+  .help-error-card { background: var(--surface2); border: 1.5px solid var(--border); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; }
+  .help-error-code { font-size: 10px; font-weight: 700; color: var(--text-muted); letter-spacing: 1px; }
+  .help-error-title { font-size: 14px; font-weight: 700; color: var(--text); }
+  .help-error-msg { font-size: 12px; color: var(--danger); font-style: italic; }
+  .help-error-fix { font-size: 12px; color: var(--accent2); margin-top: 4px; line-height: 1.6; }
+
+  /* エラーボックス改善 */
+  .error-card { background: #fff0f0; border: 1.5px solid var(--danger); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; }
+  .error-card-title { font-size: 14px; font-weight: 700; color: var(--danger); display: flex; align-items: center; gap: 6px; }
+  .error-card-fix { font-size: 12px; color: var(--accent2); line-height: 1.6; padding-top: 4px; border-top: 1px solid rgba(217,48,48,0.15); }
+
   /* トースト */
   .toast { position: fixed; bottom: calc(28px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%) translateY(80px); background: var(--accent); color: #fff; font-weight: 700; font-size: 14px; padding: 12px 24px; border-radius: 100px; transition: transform 0.3s ease; z-index: 300; white-space: nowrap; pointer-events: none; }
   .toast.show { transform: translateX(-50%) translateY(0); }
@@ -229,11 +241,15 @@
 <div class="header">
   <div class="header-left">
     <div class="header-title">NAUTO</div>
-    <div class="header-catch">Less Writing. More Talking.</div>
+    <div class="header-catch">Less Writing.<br>More Talking.</div>
   </div>
   <div class="header-right">
-    <div class="header-version">v2.3.7</div>
-    <div class="settings-btn" id="settingsBtn">⚙️</div>
+    <div class="header-version">v2.4.6d</div>
+    <div style="display:flex;gap:8px;">
+      <div class="settings-btn" id="historyHeaderBtn" style="font-size:16px;">📚</div>
+      <div class="settings-btn" id="helpBtn" style="font-size:15px;font-weight:700;">?</div>
+      <div class="settings-btn" id="settingsBtn">⚙️</div>
+    </div>
   </div>
 </div>
 
@@ -347,8 +363,7 @@
 
   <!-- パネル2：処理中 -->
   <div class="panel" id="panel2">
-    <!-- STEPインジケーター -->
-    <div class="step-indicator" id="stepIndicator">
+    <div class="step-indicator" id="stepIndicator" style="display:none;">
       <div class="step-badge" id="stepBadge">STEP 1/3</div>
     </div>
     <div class="progress-card">
@@ -369,7 +384,10 @@
   <div class="panel" id="panel3">
     <div style="display:flex;align-items:center;justify-content:space-between;">
       <div class="section-title">✅ 議事録</div>
-      <button class="btn-edit-toggle" id="editToggle">✏️ 編集</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-edit-toggle" id="historyBtn">📚 履歴</button>
+        <button class="btn-edit-toggle" id="editToggle">✏️ 編集</button>
+      </div>
     </div>
 
     <!-- 表示モード -->
@@ -404,6 +422,159 @@
     </details>
   </div>
 
+</div>
+
+<!-- 履歴モーダル -->
+<div class="modal-overlay" id="historyOverlay">
+  <div class="modal">
+    <div class="modal-title" style="display:flex;align-items:center;justify-content:space-between;">
+      <span>📚 議事録履歴</span>
+      <button class="btn btn-ghost btn-sm" id="clearHistoryBtn" style="font-size:11px;padding:4px 10px;">全削除</button>
+    </div>
+    <div id="historyList" style="display:flex;flex-direction:column;gap:8px;max-height:70dvh;overflow-y:auto;"></div>
+    <button class="btn btn-ghost" id="closeHistory">閉じる</button>
+  </div>
+</div>
+
+<!-- 議事録詳細モーダル -->
+<div class="modal-overlay" id="historyDetailOverlay">
+  <div class="modal">
+    <div class="modal-title" id="historyDetailTitle" style="font-size:14px;"></div>
+    <div class="result-box" id="historyDetailContent" style="max-height:60dvh;overflow-y:auto;"></div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-primary" id="historyDetailCopy" style="flex:1;">📋 コピー</button>
+      <button class="btn btn-ghost"   id="closeHistoryDetail">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- マニュアルモーダル -->
+<div class="modal-overlay" id="helpOverlay">
+  <div class="modal">
+    <div class="modal-title">📖 マニュアル</div>
+
+    <details class="modal-details" open>
+      <summary><span>🚀 基本的な使い方</span></summary>
+      <div style="margin-top:8px;font-size:13px;line-height:1.8;color:var(--text);">
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div>① 日付・議題・参加者を入力</div>
+          <div>② 議事録テンプレートを選択</div>
+          <div>③ 音声ファイルをタップして選択（または文字起こしテキストをアップロード）</div>
+          <div>④「文字起こしを開始」ボタンを押す</div>
+          <div>⑤ 完了後、議事録を確認・編集・メール送信</div>
+        </div>
+      </div>
+    </details>
+
+    <div class="modal-divider"></div>
+
+    <details class="modal-details">
+      <summary><span>⚠️ エラーと対処法</span></summary>
+      <div style="margin-top:8px;display:flex;flex-direction:column;gap:10px;">
+
+        <div class="help-error-card">
+          <div class="help-error-code">E-01</div>
+          <div class="help-error-title">ファイルサイズ超過</div>
+          <div class="help-error-msg">「100MB以下のファイルを選択してください」</div>
+          <div class="help-error-fix">📌 録音を分割するか、録音アプリのビットレートを32kbpsに下げてください</div>
+        </div>
+
+        <div class="help-error-card">
+          <div class="help-error-code">E-02</div>
+          <div class="help-error-title">Groq APIエラー</div>
+          <div class="help-error-msg">「Whisper APIエラー: ...」</div>
+          <div class="help-error-fix">📌 設定のGroq APIキーを確認。無効な場合はconsole.groq.comで再発行</div>
+        </div>
+
+        <div class="help-error-card">
+          <div class="help-error-code">E-03</div>
+          <div class="help-error-title">Groq タイムアウト</div>
+          <div class="help-error-msg">「タイムアウト：通信が不安定です」</div>
+          <div class="help-error-fix">📌 Wi-Fi接続を確認して再試行。ファイルサイズが大きい場合は分割を検討</div>
+        </div>
+
+        <div class="help-error-card">
+          <div class="help-error-code">E-04</div>
+          <div class="help-error-title">Groq 25MB超過</div>
+          <div class="help-error-msg">「Groqの上限（25MB）を超えています」</div>
+          <div class="help-error-fix">📌 設定→文字起こしサービス→25MB超の処理を「Deepgramに自動切り替え」に変更</div>
+        </div>
+
+        <div class="help-error-card">
+          <div class="help-error-code">E-05</div>
+          <div class="help-error-title">Deepgram APIエラー</div>
+          <div class="help-error-msg">「Deepgram APIエラー: ...」</div>
+          <div class="help-error-fix">📌 設定のDeepgram APIキーを確認。クレジット残高はconsole.deepgram.comで確認</div>
+        </div>
+
+        <div class="help-error-card">
+          <div class="help-error-code">E-06</div>
+          <div class="help-error-title">Deepgram APIキー未設定</div>
+          <div class="help-error-msg">「Deepgram APIキーが設定されていません」</div>
+          <div class="help-error-fix">📌 設定→APIキー→Deepgram API Keyを登録して保存</div>
+        </div>
+
+        <div class="help-error-card">
+          <div class="help-error-code">E-07</div>
+          <div class="help-error-title">Claude APIエラー</div>
+          <div class="help-error-msg">「Claude APIエラー: ...」</div>
+          <div class="help-error-fix">📌 文字起こしは保持済み→「議事録生成を再試行」ボタンを押す。APIキーとクレジットを確認</div>
+        </div>
+
+        <div class="help-error-card">
+          <div class="help-error-code">E-08</div>
+          <div class="help-error-title">Claude タイムアウト</div>
+          <div class="help-error-msg">「タイムアウト：Claude APIからの応答がありません」</div>
+          <div class="help-error-fix">📌 「議事録生成を再試行」ボタンを押す。最大トークン数が大きい場合は詳細設定で4096に戻す</div>
+        </div>
+
+        <div class="help-error-card">
+          <div class="help-error-code">E-09</div>
+          <div class="help-error-title">バックアップ読み込み失敗</div>
+          <div class="help-error-msg">「読み込みに失敗しました」</div>
+          <div class="help-error-fix">📌 正しいNAUTOバックアップファイル（.json）を選択しているか確認</div>
+        </div>
+
+      </div>
+    </details>
+
+    <div class="modal-divider"></div>
+
+    <details class="modal-details">
+      <summary><span>💡 よくある質問</span></summary>
+      <div style="margin-top:8px;display:flex;flex-direction:column;gap:12px;font-size:13px;line-height:1.7;">
+        <div>
+          <div style="font-weight:700;color:var(--accent2);">Q. ボタンが押せない</div>
+          <div style="color:var(--text-muted);">A. APIキーが未設定の可能性があります。⚙️設定から各APIキーを登録してください</div>
+        </div>
+        <div>
+          <div style="font-weight:700;color:var(--accent2);">Q. 文字起こしの精度が低い</div>
+          <div style="color:var(--text-muted);">A. 設定→単語マスタに専門用語を登録すると精度が上がります。Deepgramの話者識別もお試しください</div>
+        </div>
+        <div>
+          <div style="font-weight:700;color:var(--accent2);">Q. 別の端末で使いたい</div>
+          <div style="color:var(--text-muted);">A. ⚙️設定→バックアップ→一括エクスポートでデータを保存し、新しい端末でインポートしてください</div>
+        </div>
+        <div>
+          <div style="font-weight:700;color:var(--accent2);">Q. 1時間以上の録音が使えない</div>
+          <div style="color:var(--text-muted);">A. Deepgramを選択してください。ファイルサイズ制限なしで処理できます</div>
+        </div>
+      </div>
+    </details>
+
+    <div class="modal-divider"></div>
+
+    <details class="modal-details">
+      <summary><span>📞 APIキー取得先</span></summary>
+      <div style="margin-top:8px;display:flex;flex-direction:column;gap:8px;font-size:13px;">
+        <div>🎙 Groq（無料）：<span style="color:var(--accent2);">console.groq.com</span></div>
+        <div>🎙 Deepgram（$200無料）：<span style="color:var(--accent2);">console.deepgram.com</span></div>
+        <div>🤖 Anthropic：<span style="color:var(--accent2);">console.anthropic.com</span></div>
+      </div>
+    </details>
+
+    <button class="btn btn-ghost" id="closeHelp">閉じる</button>
+  </div>
 </div>
 
 <!-- 設定モーダル -->
@@ -555,7 +726,51 @@
 
     <div class="modal-divider"></div>
 
-    <!-- ⑦ APIキー -->
+    <!-- ⑦ 詳細設定 -->
+    <details class="modal-details">
+      <summary><span>⚙️ 詳細設定</span></summary>
+      <div style="margin-top:8px;display:flex;flex-direction:column;gap:12px;">
+
+        <div style="font-size:12px;color:var(--text-muted);">音声解析の推定時間係数（大きいほど推定時間が長くなります）</div>
+        <div style="display:flex;gap:12px;">
+          <div class="input-group" style="flex:1;">
+            <div class="label">Groq（秒/MB）</div>
+            <input type="number" id="groqCoeff" value="3" min="1" max="30" step="0.5" style="text-align:center;">
+            <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">16MB→約48秒推定</div>
+          </div>
+          <div class="input-group" style="flex:1;">
+            <div class="label">Deepgram（秒/MB）</div>
+            <input type="number" id="deepgramCoeff" value="3" min="1" max="30" step="0.5" style="text-align:center;">
+            <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">16MB→約48秒推定</div>
+          </div>
+        </div>
+
+        <div style="font-size:12px;color:var(--text-muted);">議事録生成の推定時間（文字起こしの文字数から計算）</div>
+        <div style="display:flex;gap:12px;">
+          <div class="input-group" style="flex:1;">
+            <div class="label">文字数÷係数</div>
+            <input type="number" id="claudeCoeff" value="500" min="100" max="2000" step="100" style="text-align:center;">
+            <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">10,000文字→約20秒推定</div>
+          </div>
+          <div class="input-group" style="flex:1;">
+            <div class="label">最大トークン数</div>
+            <input type="number" id="maxTokens" value="4096" min="1024" max="8192" step="512" style="text-align:center;">
+            <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">長い会議は増やす</div>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <div class="label">Claudeへの固定指示（冒頭プロンプト）</div>
+          <textarea id="claudeSystemPrompt" rows="6" style="font-size:12px;resize:vertical;min-height:120px;" placeholder="以下は製造業・工作機械業界の商談音声文字起こしです..."></textarea>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">空白の場合はデフォルトの指示が使用されます</div>
+        </div>
+
+      </div>
+    </details>
+
+    <div class="modal-divider"></div>
+
+    <!-- ⑧ APIキー -->
     <details class="modal-details">
       <summary><span>🔑 APIキー</span></summary>
       <div style="margin-top:8px;">
@@ -698,6 +913,12 @@ const getMailTo        = () => LS.get('mail_to');
 const getSttService    = () => LS.get('stt_service') || 'groq';
 const getDiarize       = () => LS.get('diarize') === 'true';
 const getGroqFallback  = () => LS.get('groq_fallback') || 'deepgram';
+// 詳細設定
+const getGroqCoeff          = () => parseFloat(LS.get('groq_coeff'))      || 3;
+const getDeepgramCoeff      = () => parseFloat(LS.get('deepgram_coeff'))  || 3;
+const getClaudeCoeff        = () => parseFloat(LS.get('claude_coeff'))    || 500;
+const getMaxTokens          = () => parseInt(LS.get('max_tokens'))        || 4096;
+const getClaudeSystemPrompt = () => LS.get('claude_system_prompt') || '';
 
 // ─── テンプレート管理 ────────────────────────
 function getTemplates() {
@@ -885,8 +1106,12 @@ document.getElementById('exportAllBtn').addEventListener('click', () => {
     mail_to:       getMailTo(),
     stt_service:   getSttService(),
     groq_fallback: getGroqFallback(),
-    // データ
-    templates:     getTemplates(),
+    // 詳細設定
+    groq_coeff:           getGroqCoeff(),
+    deepgram_coeff:       getDeepgramCoeff(),
+    claude_coeff:         getClaudeCoeff(),
+    max_tokens:           getMaxTokens(),
+    claude_system_prompt: getClaudeSystemPrompt(),
     master_data:   LS.get('master_data'),
     word_master:   getWordMaster(),
   };
@@ -913,6 +1138,11 @@ document.getElementById('importAllFile').addEventListener('change', e => {
       if (data.mail_to)       LS.set('mail_to',        data.mail_to);
       if (data.stt_service)   LS.set('stt_service',    data.stt_service);
       if (data.groq_fallback) LS.set('groq_fallback',  data.groq_fallback);
+      if (data.groq_coeff)           LS.set('groq_coeff',           data.groq_coeff);
+      if (data.deepgram_coeff)       LS.set('deepgram_coeff',       data.deepgram_coeff);
+      if (data.claude_coeff)         LS.set('claude_coeff',         data.claude_coeff);
+      if (data.max_tokens)           LS.set('max_tokens',           data.max_tokens);
+      if (data.claude_system_prompt) LS.set('claude_system_prompt', data.claude_system_prompt);
       // データ
       if (data.templates)     saveTemplates(data.templates);
       if (data.master_data)   LS.set('master_data',    data.master_data);
@@ -1379,6 +1609,27 @@ function showColleaguePicker() {
   picker.appendChild(directRow);
 }
 
+// ─── 詳細設定：係数変更時のリアルタイム表示 ──────────
+function updateCoeffPreview() {
+  const groq    = parseFloat(document.getElementById('groqCoeff')?.value)    || 3;
+  const dgram   = parseFloat(document.getElementById('deepgramCoeff')?.value) || 3;
+  const claude  = parseFloat(document.getElementById('claudeCoeff')?.value)   || 500;
+
+  // 16MB想定
+  const groqSec   = Math.max(20, 16 * groq);
+  const dgramSec  = Math.max(30, 16 * dgram);
+  // 10,000文字想定
+  const claudeSec = Math.max(15, Math.min(90, 10000 / claude));
+
+  const groqEl  = document.getElementById('groqCoeff')?.closest('.input-group')?.querySelector('div:last-child');
+  const dgramEl = document.getElementById('deepgramCoeff')?.closest('.input-group')?.querySelector('div:last-child');
+  const claudeEl= document.getElementById('claudeCoeff')?.closest('.input-group')?.querySelector('div:last-child');
+
+  if (groqEl)  groqEl.textContent  = `16MB→約${groqSec}秒推定`;
+  if (dgramEl) dgramEl.textContent = `16MB→約${dgramSec}秒推定`;
+  if (claudeEl)claudeEl.textContent= `10,000文字→約${claudeSec}秒推定`;
+}
+
 // ─── ステータス ───────────────────────────────
 function updateApiStatus() {
   const svc = getSttService();
@@ -1435,20 +1686,48 @@ function setProgress(pct, label, sub, stepCur, stepTotal) {
   document.getElementById('progressBar').style.width = pct+'%';
   document.getElementById('progressLabel').textContent = label;
   document.getElementById('progressSub').textContent  = sub||'';
-  const indicator = document.getElementById('stepIndicator');
-  if (stepCur && stepTotal) {
-    document.getElementById('stepBadge').textContent = `STEP ${stepCur}/${stepTotal}`;
-    indicator.style.display = 'flex';
-  } else if (stepCur === '' || stepTotal === '') {
-    indicator.style.display = 'none';
-  }
+  // STEPバッジは非表示（上部のSTEPインジケーターで代替）
 }
 function showToast(msg) {
   const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'),2200);
 }
-function showError(id,msg){const el=document.getElementById(id);el.textContent=msg;el.classList.add('visible');}
-function clearError(id){document.getElementById(id).classList.remove('visible');}
+// エラーメッセージと対処法のマッピング
+const ERROR_GUIDE = {
+  'Whisper APIエラー':       '設定のGroq APIキーを確認してください',
+  'タイムアウト：通信が不安定': 'Wi-Fi接続を確認して再試行してください',
+  'Groqの上限（25MB）':      '設定→25MB超の処理を「Deepgramに自動切り替え」に変更してください',
+  'Deepgram APIエラー':      '設定のDeepgram APIキーとクレジット残高を確認してください',
+  'Deepgram APIキーが設定':   '設定→APIキー→Deepgram API Keyを登録してください',
+  'タイムアウト：Deepgram':   'Wi-Fi接続を確認して再試行してください',
+  'Claude APIエラー':        '「議事録生成を再試行」ボタンを押してください。APIキーとクレジットも確認',
+  'タイムアウト：Claude':     '「議事録生成を再試行」ボタンを押してください',
+  '100MB以下':               '録音を分割するか、ビットレートを32kbpsに下げてください',
+};
+
+function getErrorFix(msg) {
+  for (const [key, fix] of Object.entries(ERROR_GUIDE)) {
+    if (msg.includes(key)) return fix;
+  }
+  return 'Wi-Fi接続を確認して再試行してください';
+}
+
+function showError(id, msg) {
+  const el = document.getElementById(id);
+  const cleanMsg = msg.replace('❌ ', '').replace('⚠️ ', '');
+  const fix = getErrorFix(cleanMsg);
+  el.innerHTML = `
+    <div class="error-card">
+      <div class="error-card-title">⚠️ ${cleanMsg}</div>
+      <div class="error-card-fix">📌 ${fix}</div>
+    </div>`;
+  el.classList.add('visible');
+}
+function clearError(id) {
+  const el = document.getElementById(id);
+  el.classList.remove('visible');
+  el.innerHTML = '';
+}
 
 // ─── モーダル ────────────────────────────────
 function openModal() {
@@ -1458,7 +1737,12 @@ function openModal() {
   document.getElementById('deepgramKey').value     = getDeepgramKey();
   document.getElementById('anthropicKey').value    = getAnthropicKey();
   document.getElementById('settingMailTo').value   = getMailTo();
-  document.getElementById('wordMaster').value     = getWordMaster();
+  document.getElementById('wordMaster').value          = getWordMaster();
+  document.getElementById('groqCoeff').value           = getGroqCoeff();
+  document.getElementById('deepgramCoeff').value       = getDeepgramCoeff();
+  document.getElementById('claudeCoeff').value         = getClaudeCoeff();
+  document.getElementById('maxTokens').value           = getMaxTokens();
+  document.getElementById('claudeSystemPrompt').value  = getClaudeSystemPrompt();
   renderWordMasterDisplay();
   // 参加者マスターはdetails展開時に描画
   const masterDetails = document.getElementById('masterDetails');
@@ -1480,6 +1764,12 @@ function openModal() {
   renderTemplateList();
   resetEditor();
   document.getElementById('modalOverlay').classList.add('open');
+  // 係数プレビューのイベント登録
+  ['groqCoeff','deepgramCoeff','claudeCoeff'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', updateCoeffPreview);
+  });
+  updateCoeffPreview();
 }
 function closeModal(){document.getElementById('modalOverlay').classList.remove('open');}
 // Groq選択時のみフォールバック選択を表示
@@ -1509,7 +1799,12 @@ document.getElementById('saveSettings').addEventListener('click',()=>{
   LS.set('deepgram_key',   document.getElementById('deepgramKey').value.trim());
   LS.set('anthropic_key',  document.getElementById('anthropicKey').value.trim());
   LS.set('mail_to',        document.getElementById('settingMailTo').value.trim());
-  LS.set('word_master',    document.getElementById('wordMaster').value.trim());
+  LS.set('word_master',          document.getElementById('wordMaster').value.trim());
+  LS.set('groq_coeff',           document.getElementById('groqCoeff').value);
+  LS.set('deepgram_coeff',       document.getElementById('deepgramCoeff').value);
+  LS.set('claude_coeff',         document.getElementById('claudeCoeff').value);
+  LS.set('max_tokens',           document.getElementById('maxTokens').value);
+  LS.set('claude_system_prompt', document.getElementById('claudeSystemPrompt').value.trim());
   LS.set('stt_service',    document.querySelector('input[name="sttService"]:checked')?.value || 'groq');
   LS.set('groq_fallback',  document.querySelector('input[name="groqFallback"]:checked')?.value || 'deepgram');
   LS.set('diarize',        document.getElementById('diarizeEnabled').checked ? 'true' : 'false');
@@ -1741,7 +2036,7 @@ async function transcribeWithDeepgram(file) {
 async function generateMinutes(transcript, stepCur, stepTotal) {
   setProgress(0, '🤖 議事録を生成中...', '', stepCur, stepTotal);
   // 文字起こしの文字数から推定時間を計算（最低15秒・最高90秒）
-  const estClaudeSec = Math.max(15, Math.min(90, transcript.length / 500));
+  const estClaudeSec = Math.max(15, Math.min(90, transcript.length / getClaudeCoeff()));
   const claudeTimer = startFakeUploadProgress(0, 100, estClaudeSec,
     pct => `🤖 議事録を生成中... ${pct}%`
   );
@@ -1753,17 +2048,23 @@ async function generateMinutes(transcript, stepCur, stepTotal) {
   const wordSection = wordList.length > 0
     ? `以下の専門用語・固有名詞を正確に使用してください：\n${wordList.join('、')}\n\n`
     : '';
+
+  // Claudeへの固定指示（カスタム設定があれば使用、なければデフォルト）
+  const customSystemPrompt = getClaudeSystemPrompt();
+  const systemInstruction = customSystemPrompt ||
+    `以下は製造業・工作機械業界の商談音声文字起こしです。\n` +
+    `専門用語（CNC・ATC・マシニングセンタ・NC旋盤・パレットチェンジャー・ロボドリル・研削盤・放電加工機・BT30・HSK等）を正確に認識し、\n` +
+    `テンプレートの指示に従って日本語で議事録を作成してください。\n` +
+    `【厳守事項】\n` +
+    `・文字起こしに含まれない内容は追加しないでください。\n` +
+    `・マークダウン記法（#・##・**・*・---など）は一切使用しないでください。\n` +
+    `・冒頭にタイトル行は不要です。\n` +
+    `・テンプレートで指定したセクション以外（■ 概要・■ まとめ等）は絶対に追加しないでください。\n` +
+    `・出力はテンプレートのフォーマットのみとし、余計なセクションは一切追加しないでください。`;
+
   const prompt  =
-    `以下は製造業・工作機械業界の商談音声文字起こしです。\n`+
-    `専門用語（CNC・ATC・マシニングセンタ・NC旋盤・パレットチェンジャー・ロボドリル・研削盤・放電加工機・BT30・HSK等）を正確に認識し、\n`+
-    `テンプレートの指示に従って日本語で議事録を作成してください。\n`+
-    `【厳守事項】\n`+
-    `・文字起こしに含まれない内容は追加しないでください。\n`+
-    `・マークダウン記法（#・##・**・*・---など）は一切使用しないでください。\n`+
-    `・冒頭にタイトル行は不要です。\n`+
-    `・テンプレートで指定したセクション以外（■ 概要・■ まとめ等）は絶対に追加しないでください。\n`+
-    `・出力はテンプレートのフォーマットのみとし、余計なセクションは一切追加しないでください。\n\n`+
-    wordSection+
+    systemInstruction + `\n\n` +
+    wordSection +
     `【会議情報】\n- 日時：${datetime}\n- 参加者：${members}\n- 議題：${topic}\n\n`+
     `【文字起こし】\n${transcript}\n\n---\n\n`+
     `【議事録作成の指示】\n${tpl.prompt}`;
@@ -1774,7 +2075,7 @@ async function generateMinutes(transcript, stepCur, stepTotal) {
     cr = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type':'application/json', 'x-api-key':getAnthropicKey(), 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' },
-      body: JSON.stringify({ model:'claude-sonnet-4-5', max_tokens:4096, messages:[{role:'user',content:prompt}] }),
+      body: JSON.stringify({ model:'claude-sonnet-4-5', max_tokens:getMaxTokens(), messages:[{role:'user',content:prompt}] }),
       signal: ctrl.signal,
     });
   } catch(err) {
@@ -1812,6 +2113,8 @@ function finishProcessing(tStart, sizeMB, usedDeepgram, usage) {
     document.getElementById('transcriptResult').textContent = state.transcript;
     document.getElementById('chatHistory').innerHTML        = '';
     state.chatHistory = [];
+    // 議事録を履歴に保存
+    saveToHistory();
     setStep(3);
   }, 400);
 }
@@ -1847,14 +2150,14 @@ document.getElementById('startBtn').addEventListener('click', async () => {
 
     if (svc === 'deepgram') {
       setProgress(0, '🎙 音声を解析中... [Deepgram]', '', 1, 2);
-      const estSec = Math.max(30, sizeMB * 3);
+      const estSec = Math.max(30, sizeMB * getDeepgramCoeff());
       activeTimer  = startFakeUploadProgress(0, 100, estSec, pct => `🎙 音声を解析中... ${pct}% [Deepgram]`);
       transcriptText = await transcribeWithDeepgram(state.file);
       clearActiveTimer(); usedDeepgram = true;
 
     } else if (sizeMB <= CHUNK_MAX_MB) {
       setProgress(0, '🎙 音声を解析中... [Groq]', '', 1, 2);
-      const estSec = Math.max(20, sizeMB * 3);
+      const estSec = Math.max(20, sizeMB * getGroqCoeff());
       activeTimer  = startFakeUploadProgress(0, 100, estSec, pct => `🎙 音声を解析中... ${pct}% [Groq]`);
       transcriptText = await transcribeBlob(state.file, state.file.name);
       clearActiveTimer();
@@ -1862,7 +2165,7 @@ document.getElementById('startBtn').addEventListener('click', async () => {
     } else if (fallback === 'deepgram') {
       if (!getDeepgramKey()) throw new Error('Deepgram APIキーが設定されていません。');
       setProgress(0, '🎙 音声を解析中... [Deepgram]', '', 1, 2);
-      const estSec = Math.max(30, sizeMB * 3);
+      const estSec = Math.max(30, sizeMB * getDeepgramCoeff());
       activeTimer  = startFakeUploadProgress(0, 100, estSec, pct => `🎙 音声を解析中... ${pct}% [Deepgram]`);
       transcriptText = await transcribeWithDeepgram(state.file);
       clearActiveTimer(); usedDeepgram = true;
@@ -1874,7 +2177,7 @@ document.getElementById('startBtn').addEventListener('click', async () => {
       const parts  = [];
       for (let i = 0; i < total; i++) {
         const wav    = audioBufferToWavBlob(chunks[i]);
-        const estSec = Math.max(20, (wav.size/1024/1024)*3);
+        const estSec = Math.max(20, (wav.size/1024/1024)*getGroqCoeff());
         const sp     = Math.round(10 + (i/total)*42);
         const ep     = Math.round(10 + ((i+1)/total)*42);
         setProgress(sp, `🎙 音声を解析中... (${i+1}/${total}) [Groq]`, '', i+2, total+2);
@@ -2046,6 +2349,85 @@ document.getElementById('editToggle').addEventListener('click', () => {
   }
 });
 
+// ─── 議事録履歴管理 ──────────────────────────
+const HISTORY_KEY = 'minutes_history';
+const HISTORY_MAX = 30;
+
+function getHistory() {
+  try { return JSON.parse(LS.get(HISTORY_KEY) || '[]'); } catch(e) { return []; }
+}
+
+function saveToHistory() {
+  const history  = getHistory();
+  const datetime = getMeetingDatetime();
+  const topic    = document.getElementById('meetingTopic').value.trim();
+  const customer = members.customer.join('、');
+  const entry = {
+    id: Date.now(), datetime, customer, topic,
+    minutes: state.minutes,
+    saved_at: new Date().toISOString(),
+  };
+  history.unshift(entry);
+  if (history.length > HISTORY_MAX) history.pop();
+  LS.set(HISTORY_KEY, JSON.stringify(history));
+}
+
+function getMailSubject() {
+  const dt      = getMeetingDatetime();
+  const topic   = document.getElementById('meetingTopic').value.trim();
+  const match   = dt.match(/(\d+)年(\d+)月(\d+)日/);
+  const dateStr = match ? `${match[2]}/${match[3]}` : dt;
+  const custCompany = members.customer.length > 0
+    ? members.customer[0].replace(/様$/, '').split(' ')[0] : '';
+  return ['議事', dateStr, custCompany, topic].filter(Boolean).join(' ');
+}
+
+function renderHistoryList() {
+  const list    = document.getElementById('historyList');
+  const history = getHistory();
+  list.innerHTML = '';
+  if (history.length === 0) {
+    list.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:20px;font-size:13px;">履歴はありません</div>';
+    return;
+  }
+  history.forEach((entry, idx) => {
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'position:relative;';
+    const card = document.createElement('div');
+    card.style.cssText = 'background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;padding-right:44px;cursor:pointer;';
+    card.innerHTML = `
+      <div style="font-size:12px;color:var(--text-muted);">${entry.datetime}</div>
+      <div style="font-size:14px;font-weight:600;color:var(--text);margin:2px 0;">${entry.topic||'（議題未入力）'}</div>
+      <div style="font-size:12px;color:var(--accent2);">${entry.customer||''}</div>`;
+    card.addEventListener('click', () => showHistoryDetail(entry));
+    const delBtn = document.createElement('button');
+    delBtn.textContent = '✕';
+    delBtn.style.cssText = 'position:absolute;top:10px;right:10px;width:28px;height:28px;border-radius:50%;background:var(--surface);border:1px solid var(--border);color:var(--text-muted);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;';
+    delBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const h = getHistory(); h.splice(idx, 1);
+      LS.set(HISTORY_KEY, JSON.stringify(h));
+      renderHistoryList(); showToast('削除しました');
+    });
+    wrap.appendChild(card); wrap.appendChild(delBtn);
+    list.appendChild(wrap);
+  });
+}
+
+function showHistoryDetail(entry) {
+  document.getElementById('historyDetailTitle').textContent = entry.datetime + '｜' + (entry.topic||'');
+  document.getElementById('historyDetailContent').textContent = entry.minutes;
+  document.getElementById('historyDetailOverlay').classList.add('open');
+  document.getElementById('historyDetailCopy').onclick = () => {
+    navigator.clipboard.writeText(entry.minutes).then(() => showToast('コピーしました'));
+  };
+}
+
+function openHistory() {
+  renderHistoryList();
+  document.getElementById('historyOverlay').classList.add('open');
+}
+
 // ─── コピー ──────────────────────────────────
 document.getElementById('copyBtn').addEventListener('click',()=>{
   // 編集中の場合は編集エリアの内容を使用
@@ -2065,7 +2447,7 @@ document.getElementById('copyBtn').addEventListener('click',()=>{
 document.getElementById('mailBtn').addEventListener('click',()=>{
   const text    = isEditing ? document.getElementById('minutesEdit').value : state.minutes;
   const mailTo  = getMailTo();
-  const subject = encodeURIComponent('【議事録】'+getMeetingDatetime());
+  const subject = encodeURIComponent(getMailSubject());
   const body    = encodeURIComponent(
     text+'\n\n'+'━'.repeat(18)+'\n【文字起こし原文】\n'+'━'.repeat(18)+'\n'+state.transcript
   );
@@ -2116,10 +2498,50 @@ updateApiStatus();
 updateStartBtn();
 updateTemplateSelect();
 
-// 参加者追加ボタンのイベント登録
-document.getElementById('addCustomerBtn').addEventListener('click', () => showPicker('customer'));
-document.getElementById('addCompanionBtn').addEventListener('click', () => showPicker('companion'));
-document.getElementById('addColleagueBtn').addEventListener('click', () => showColleaguePicker());
+// ─── 初期化 ──────────────────────────────────
+try {
+  initTemplates();
+  setupDateTime();
+  updateMemberSelf();
+  updateApiStatus();
+  updateStartBtn();
+  updateTemplateSelect();
+
+  document.getElementById('addCustomerBtn').addEventListener('click', () => showPicker('customer'));
+  document.getElementById('addCompanionBtn').addEventListener('click', () => showPicker('companion'));
+  document.getElementById('addColleagueBtn').addEventListener('click', () => showColleaguePicker());
+
+  document.getElementById('historyHeaderBtn').addEventListener('click', openHistory);
+  document.getElementById('historyBtn').addEventListener('click', openHistory);
+  document.getElementById('closeHistory').addEventListener('click', () => {
+    document.getElementById('historyOverlay').classList.remove('open');
+  });
+  document.getElementById('historyOverlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('historyOverlay'))
+      document.getElementById('historyOverlay').classList.remove('open');
+  });
+  document.getElementById('closeHistoryDetail').addEventListener('click', () => {
+    document.getElementById('historyDetailOverlay').classList.remove('open');
+  });
+  document.getElementById('clearHistoryBtn').addEventListener('click', () => {
+    LS.set(HISTORY_KEY, '[]');
+    renderHistoryList();
+    showToast('履歴を削除しました');
+  });
+
+  document.getElementById('helpBtn').addEventListener('click', () => {
+    document.getElementById('helpOverlay').classList.add('open');
+  });
+  document.getElementById('closeHelp').addEventListener('click', () => {
+    document.getElementById('helpOverlay').classList.remove('open');
+  });
+  document.getElementById('helpOverlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('helpOverlay'))
+      document.getElementById('helpOverlay').classList.remove('open');
+  });
+} catch(e) {
+  alert('初期化エラー: ' + e.message + '\n' + (e.stack||'').split('\n').slice(0,3).join('\n'));
+}
 </script>
 </body>
 </html>
