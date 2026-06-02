@@ -47,12 +47,12 @@
   /* ドラム */
   .drum-row { display: flex; align-items: center; gap: 4px; }
   .drum-item { display: flex; flex-direction: column; align-items: center; flex: 1; }
-  .drum-sep { font-size: 18px; font-weight: 700; color: var(--text-muted); padding: 0 2px; margin-top: 14px; flex: none; }
-  .drum-select-wrapper { width: 100%; position: relative; background: var(--surface); border: 1.5px solid var(--border); border-radius: 12px; overflow: hidden; height: 56px; }
+  .drum-sep { font-size: 14px; font-weight: 700; color: var(--text-muted); padding: 0 2px; margin-top: 8px; flex: none; }
+  .drum-select-wrapper { width: 100%; position: relative; background: var(--surface); border: 1.5px solid var(--border); border-radius: 10px; overflow: hidden; height: 40px; }
   .drum-select-wrapper select { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; font-size: 16px; cursor: pointer; -webkit-appearance: none; border: none; background: transparent; }
   .drum-face { pointer-events: none; position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
-  .drum-face .dunit { font-size: 10px; font-weight: 600; color: var(--text-muted); }
-  .drum-face .dval  { font-size: 22px; font-weight: 700; color: var(--text); line-height: 1; }
+  .drum-face .dunit { font-size: 9px; font-weight: 600; color: var(--text-muted); }
+  .drum-face .dval  { font-size: 16px; font-weight: 700; color: var(--text); line-height: 1; }
 
   /* テキスト入力 */
   input[type="text"], textarea, select.styled {
@@ -205,6 +205,10 @@
   .member-suggest-item:last-child { border-bottom: none; }
   .member-suggest-item:hover { background: var(--surface2); }
 
+  .member-company-name { font-size: 15px; font-weight: 700; color: var(--accent); }
+  .member-self-fixed { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
+  .member-fixed { font-size: 14px; font-weight: 500; color: var(--accent2); }
+
   /* トースト */
   .toast { position: fixed; bottom: calc(28px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%) translateY(80px); background: var(--accent); color: #fff; font-weight: 700; font-size: 14px; padding: 12px 24px; border-radius: 100px; transition: transform 0.3s ease; z-index: 300; white-space: nowrap; pointer-events: none; }
   .toast.show { transform: translateX(-50%) translateY(0); }
@@ -218,7 +222,7 @@
     <div class="header-catch">Less Writing. More Talking.</div>
   </div>
   <div class="header-right">
-    <div class="header-version">v2.0.7</div>
+    <div class="header-version">v2.1.9</div>
     <div class="settings-btn" id="settingsBtn">⚙️</div>
   </div>
 </div>
@@ -236,6 +240,10 @@
 
     <div class="section-title">📅 日付</div>
     <div class="drum-row" id="dateRow"></div>
+
+    <div class="divider"></div>
+    <div class="section-title">💬 議題</div>
+    <input class="member-input" id="meetingTopic" type="text" placeholder="例：CNC加工機の選定について" style="background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:14px 16px;width:100%;">
 
     <div class="divider"></div>
     <div class="section-title">👥 参加者</div>
@@ -258,29 +266,18 @@
         <div class="member-tag-list" id="companionTags"></div>
         <div class="member-picker" id="companionPicker" style="display:none;"></div>
       </div>
-      <!-- 自社 -->
-      <div class="member-multi-section">
+      <!-- 自社（会社名表示＋自分固定統合） -->
+      <div class="member-multi-section" id="selfSection">
         <div class="member-multi-header">
-          <div class="member-role">自社</div>
+          <div class="member-company-name" id="memberCompanyName">自社</div>
           <button class="member-add-btn" id="addColleagueBtn">＋ 追加</button>
         </div>
         <div class="member-tag-list" id="colleagueTags"></div>
         <div class="member-picker" id="colleaguePicker" style="display:none;"></div>
-      </div>
-      <!-- 自分（固定） -->
-      <div class="member-multi-section">
-        <div class="member-multi-header">
-          <div class="member-role">自分</div>
+        <div class="member-self-fixed">
+          <div class="member-fixed" id="memberSelf">（設定から登録）</div>
           <div class="member-badge">固定・記</div>
         </div>
-        <div class="member-fixed" id="memberSelf" style="font-size:14px;font-weight:500;color:var(--accent2);padding:4px 0;">（設定から登録）</div>
-      </div>
-    </div>
-
-    <div class="section-title">💬 議題</div>
-    <div class="member-card">
-      <div class="member-row">
-        <input class="member-input" id="meetingTopic" type="text" placeholder="例：CNC加工機の選定について">
       </div>
     </div>
 
@@ -385,24 +382,27 @@
   <div class="modal">
     <div class="modal-title">⚙️ 設定</div>
 
-    <!-- 基本設定 -->
-    <div class="modal-section">👤 基本設定</div>
-    <div class="input-group">
-      <div class="label">自分の名前</div>
-      <input type="text" id="settingMyName" placeholder="例：北村" autocorrect="off">
-    </div>
-    <div class="input-group">
-      <div class="label">所属会社</div>
-      <input type="text" id="settingMyCompany" placeholder="例：関東物産" autocorrect="off">
-    </div>
-    <div style="font-size:12px;color:var(--text-muted);">同じ会社の人には「様」が付きません</div>
+    <!-- ① 基本設定 -->
+    <details class="modal-details" id="basicDetails">
+      <summary><span>👤 基本設定</span></summary>
+      <div style="margin-top:8px;">
+        <div class="input-group">
+          <div class="label">自分の名前</div>
+          <input type="text" id="settingMyName" placeholder="例：北村" autocorrect="off">
+        </div>
+        <div class="input-group">
+          <div class="label">所属会社</div>
+          <input type="text" id="settingMyCompany" placeholder="例：関東物産" autocorrect="off">
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);">同じ会社の人には「様」が付きません</div>
+      </div>
+    </details>
 
     <div class="modal-divider"></div>
 
-    <!-- 参加者マスター -->
-    <div class="modal-section">👥 参加者マスター</div>
-    <details id="masterDetails">
-      <summary style="cursor:pointer;font-size:13px;font-weight:600;color:var(--accent2);padding:8px 0;">📋 会社・担当者リストを見る／編集する</summary>
+    <!-- ② 参加者マスタ -->
+    <details class="modal-details" id="masterDetails">
+      <summary><span>👥 参加者マスタ</span></summary>
       <div style="font-size:12px;color:var(--text-muted);margin:6px 0 8px;">会社名と担当者を登録。お客様・同行者の選択時に使用されます。</div>
       <div class="master-list" id="masterCompaniesList"></div>
       <div class="master-add-row" id="masterAddRow" style="display:none;margin-top:8px;gap:8px;align-items:center;">
@@ -415,136 +415,146 @@
 
     <div class="modal-divider"></div>
 
-    <!-- APIキー -->
-    <div class="modal-section">🎙 文字起こしサービス</div>
-
-    <!-- サービス選択 -->
-    <div class="service-select-group">
-      <label class="service-radio">
-        <input type="radio" name="sttService" id="svcGroq" value="groq">
-        <div class="service-radio-box">
-          <div class="service-radio-title">Groq Whisper</div>
-          <div class="service-radio-desc">無料枠あり・25MB上限</div>
-        </div>
-      </label>
-      <label class="service-radio">
-        <input type="radio" name="sttService" id="svcDeepgram" value="deepgram">
-        <div class="service-radio-box">
-          <div class="service-radio-title">Deepgram Nova-3</div>
-          <div class="service-radio-desc">ファイル上限なし・$200無料枠</div>
-        </div>
-      </label>
-    </div>
-
-    <!-- Groq選択時のみ表示：25MB超の処理方法 -->
-    <div id="groqFallbackSection" style="display:none;">
-      <div class="label" style="margin-bottom:8px;">⚠️ 25MB超ファイルの処理</div>
-      <div class="service-select-group">
-        <label class="service-radio">
-          <input type="radio" name="groqFallback" id="fbDeepgram" value="deepgram">
-          <div class="service-radio-box">
-            <div class="service-radio-title">Deepgramに自動切り替え</div>
-            <div class="service-radio-desc">DeepgramのAPIキーが必要</div>
-          </div>
-        </label>
-        <label class="service-radio">
-          <input type="radio" name="groqFallback" id="fbSplit" value="split">
-          <div class="service-radio-box">
-            <div class="service-radio-title">ブラウザで分割送信</div>
-            <div class="service-radio-desc">PC限定・メモリ使用大</div>
-          </div>
-        </label>
-        <label class="service-radio">
-          <input type="radio" name="groqFallback" id="fbError" value="error">
-          <div class="service-radio-box">
-            <div class="service-radio-title">エラーで停止</div>
-            <div class="service-radio-desc">手動で分割録音する運用</div>
-          </div>
-        </label>
-      </div>
-    </div>
-
-    <div class="modal-divider"></div>
-
-    <div class="modal-section">🔑 APIキー</div>
-    <div class="input-group">
-      <div class="label">Groq API Key</div>
-      <input type="text" id="groqKey" placeholder="gsk_..." autocomplete="off" autocorrect="off" spellcheck="false">
-    </div>
-    <div class="input-group">
-      <div class="label">Deepgram API Key</div>
-      <input type="text" id="deepgramKey" placeholder="..." autocomplete="off" autocorrect="off" spellcheck="false">
-    </div>
-    <div class="input-group">
-      <div class="label">Anthropic API Key（議事録生成）</div>
-      <input type="text" id="anthropicKey" placeholder="sk-ant-..." autocomplete="off" autocorrect="off" spellcheck="false">
-    </div>
-    <div style="font-size:12px;color:var(--text-muted);background:var(--surface2);border-radius:10px;padding:12px;line-height:1.7;border:1px solid var(--border);">
-      🔒 すべての設定はこのデバイスのみに保存されます
-    </div>
-
-    <div class="modal-divider"></div>
-
-    <div class="modal-section">📧 メール設定</div>
-    <div class="input-group">
-      <div class="label">送信先メールアドレス（任意）</div>
-      <input type="text" id="settingMailTo" placeholder="例：may@kanto-bussan.co.jp" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
-    </div>
-    <div style="font-size:12px;color:var(--text-muted);">複数の場合はカンマ区切り（例：a@co.jp,b@co.jp）</div>
-
-    <div class="modal-divider"></div>
-
-    <!-- 単語マスター -->
-    <div class="modal-section">📖 単語マスター</div>
-    <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">専門用語・製品名・固有名詞を登録。議事録生成時にClaudeへ自動的に渡されます。</div>
-
-    <!-- 登録済み単語（折りたたみ） -->
-    <details id="wordMasterDetails">
-      <summary style="cursor:pointer;font-size:13px;font-weight:600;color:var(--accent2);padding:8px 0;">📋 登録済み単語を見る</summary>
-      <div id="wordMasterDisplay" style="margin-top:8px;background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;padding:12px;max-height:300px;overflow-y:auto;display:flex;flex-wrap:wrap;gap:6px;"></div>
+    <!-- ③ 単語マスタ -->
+    <details class="modal-details" id="wordMasterDetails">
+      <summary><span>📖 単語マスタ</span></summary>
+      <div style="font-size:12px;color:var(--text-muted);margin:8px 0 6px;">専門用語・製品名・固有名詞を登録。議事録生成時にClaudeへ自動的に渡されます。</div>
+      <div id="wordMasterDisplay" style="margin-top:8px;background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;padding:12px;max-height:200px;overflow-y:auto;display:flex;flex-wrap:wrap;gap:6px;"></div>
+      <textarea id="wordMaster" rows="6" style="resize:vertical;min-height:120px;margin-top:8px;" placeholder="例：TruLaser Center 7030&#10;TruMatic 5000&#10;ローツェ&#10;牧野フライス a500Z&#10;Fit Scheduler&#10;RORZE ROBOTECH"></textarea>
+      <div style="font-size:11px;color:var(--text-muted);">1行1単語で入力。「保存する」ボタンで保存されます。</div>
     </details>
 
-    <!-- 入力エリア -->
-    <textarea id="wordMaster" rows="8" style="resize:vertical;min-height:160px;" placeholder="例：TruLaser Center 7030&#10;TruMatic 5000&#10;ローツェ&#10;牧野フライス a500Z&#10;Fit Scheduler&#10;RORZE ROBOTECH"></textarea>
-    <div style="font-size:11px;color:var(--text-muted);">1行1単語で入力。「保存する」ボタンで保存されます。</div>
+    <div class="modal-divider"></div>
+
+    <!-- ④ メール設定 -->
+    <details class="modal-details">
+      <summary><span>📧 メール設定</span></summary>
+      <div style="margin-top:8px;">
+        <div class="input-group">
+          <div class="label">送信先メールアドレス（任意）</div>
+          <input type="text" id="settingMailTo" placeholder="例：may@kanto-bussan.co.jp" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);">複数の場合はカンマ区切り（例：a@co.jp,b@co.jp）</div>
+      </div>
+    </details>
+
+    <div class="modal-divider"></div>
+
+    <!-- ⑤ テンプレート管理 -->
+    <details class="modal-details">
+      <summary><span>📋 テンプレート管理</span></summary>
+      <div style="margin-top:8px;">
+        <div class="template-list" id="templateList"></div>
+        <div class="template-editor" id="templateEditor">
+          <div style="font-size:13px;font-weight:700;color:var(--text);" id="editorTitle">＋ 新しいテンプレートを作成</div>
+          <div class="input-group">
+            <div class="label">テンプレート名</div>
+            <input type="text" id="tplName" placeholder="例：営業商談">
+          </div>
+          <div class="input-group">
+            <div class="label">Claudeへの指示</div>
+            <textarea id="tplPrompt" rows="6" placeholder="例：以下のフォーマットで議事録を作成してください。&#10;&#10;■ 商談サマリー&#10;■ お客様の課題&#10;■ 提案内容&#10;■ 次回アクション"></textarea>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-primary btn-sm" id="saveTplBtn" style="flex:1;">保存</button>
+            <button class="btn btn-secondary btn-sm" id="cancelTplBtn" style="flex:none;width:80px;">キャンセル</button>
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <div class="modal-divider"></div>
+
+    <!-- ⑥ 文字起こしサービス -->
+    <details class="modal-details">
+      <summary><span>🎙 文字起こしサービス</span></summary>
+      <div style="margin-top:8px;">
+        <div class="service-select-group">
+          <label class="service-radio">
+            <input type="radio" name="sttService" id="svcGroq" value="groq">
+            <div class="service-radio-box">
+              <div class="service-radio-title">Groq Whisper</div>
+              <div class="service-radio-desc">無料枠あり・25MB上限</div>
+            </div>
+          </label>
+          <label class="service-radio">
+            <input type="radio" name="sttService" id="svcDeepgram" value="deepgram">
+            <div class="service-radio-box">
+              <div class="service-radio-title">Deepgram Nova-3</div>
+              <div class="service-radio-desc">ファイル上限なし・$200無料枠</div>
+            </div>
+          </label>
+        </div>
+        <div id="groqFallbackSection" style="display:none;margin-top:8px;">
+          <div class="label" style="margin-bottom:8px;">⚠️ 25MB超ファイルの処理</div>
+          <div class="service-select-group">
+            <label class="service-radio">
+              <input type="radio" name="groqFallback" id="fbDeepgram" value="deepgram">
+              <div class="service-radio-box">
+                <div class="service-radio-title">Deepgramに自動切り替え</div>
+                <div class="service-radio-desc">DeepgramのAPIキーが必要</div>
+              </div>
+            </label>
+            <label class="service-radio">
+              <input type="radio" name="groqFallback" id="fbSplit" value="split">
+              <div class="service-radio-box">
+                <div class="service-radio-title">ブラウザで分割送信</div>
+                <div class="service-radio-desc">PC限定・メモリ使用大</div>
+              </div>
+            </label>
+            <label class="service-radio">
+              <input type="radio" name="groqFallback" id="fbError" value="error">
+              <div class="service-radio-box">
+                <div class="service-radio-title">エラーで停止</div>
+                <div class="service-radio-desc">手動で分割録音する運用</div>
+              </div>
+            </label>
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <div class="modal-divider"></div>
+
+    <!-- ⑦ APIキー -->
+    <details class="modal-details">
+      <summary><span>🔑 APIキー</span></summary>
+      <div style="margin-top:8px;">
+        <div class="input-group">
+          <div class="label">Groq API Key</div>
+          <input type="text" id="groqKey" placeholder="gsk_..." autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+        <div class="input-group">
+          <div class="label">Deepgram API Key</div>
+          <input type="text" id="deepgramKey" placeholder="..." autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+        <div class="input-group">
+          <div class="label">Anthropic API Key（議事録生成）</div>
+          <input type="text" id="anthropicKey" placeholder="sk-ant-..." autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);background:var(--surface2);border-radius:10px;padding:12px;line-height:1.7;border:1px solid var(--border);">
+          🔒 すべての設定はこのデバイスのみに保存されます
+        </div>
+      </div>
+    </details>
 
     <button class="btn btn-primary" id="saveSettings">保存する</button>
 
     <div class="modal-divider"></div>
 
-    <!-- テンプレート管理 -->
-    <div class="modal-section">📋 テンプレート管理</div>
-    <div class="template-list" id="templateList"></div>
-
-    <!-- 新規作成 -->
-    <div class="template-editor" id="templateEditor">
-      <div style="font-size:13px;font-weight:700;color:var(--text);" id="editorTitle">＋ 新しいテンプレートを作成</div>
-      <div class="input-group">
-        <div class="label">テンプレート名</div>
-        <input type="text" id="tplName" placeholder="例：営業商談">
+    <!-- ⑧ バックアップ -->
+    <details class="modal-details">
+      <summary><span>💾 バックアップ</span></summary>
+      <div style="margin-top:8px;">
+        <div style="font-size:12px;color:var(--text-muted);line-height:1.6;margin-bottom:4px;">APIキー・設定・テンプレート・参加者マスタ・単語マスタをすべて1ファイルで保存・復元します。</div>
+        <div class="backup-row">
+          <button class="btn btn-secondary" id="exportAllBtn">📤 一括<br>エクスポート</button>
+          <button class="btn btn-secondary" id="importAllBtn">📥 一括<br>インポート</button>
+          <input type="file" id="importAllFile" accept=".json" style="display:none;">
+        </div>
+        <div style="font-size:11px;color:var(--danger);line-height:1.5;">⚠️ APIキーが含まれます。取り扱いにご注意ください。</div>
       </div>
-      <div class="input-group">
-        <div class="label">Claudeへの指示</div>
-        <textarea id="tplPrompt" rows="6" placeholder="例：以下のフォーマットで議事録を作成してください。&#10;&#10;■ 商談サマリー&#10;■ お客様の課題&#10;■ 提案内容&#10;■ 次回アクション"></textarea>
-      </div>
-      <div style="display:flex;gap:8px;">
-        <button class="btn btn-primary btn-sm" id="saveTplBtn" style="flex:1;">保存</button>
-        <button class="btn btn-secondary btn-sm" id="cancelTplBtn" style="flex:none;width:80px;">キャンセル</button>
-      </div>
-    </div>
-
-
-    <div class="modal-divider"></div>
-
-    <!-- バックアップ（一括） -->
-    <div class="modal-section">💾 バックアップ</div>
-    <div style="font-size:12px;color:var(--text-muted);line-height:1.6;margin-bottom:4px;">APIキー・設定・テンプレート・参加者マスター・単語マスターをすべて1ファイルで保存・復元します。</div>
-    <div class="backup-row">
-      <button class="btn btn-secondary" id="exportAllBtn">📤 一括エクスポート</button>
-      <button class="btn btn-secondary" id="importAllBtn">📥 一括インポート</button>
-      <input type="file" id="importAllFile" accept=".json" style="display:none;">
-    </div>
-    <div style="font-size:11px;color:var(--danger);line-height:1.5;">⚠️ APIキーが含まれます。取り扱いにご注意ください。</div>
+    </details>
 
     <button class="btn btn-ghost" id="cancelSettings">閉じる</button>
   </div>
@@ -780,7 +790,7 @@ function renderWordMasterDisplay() {
   if (!display) return;
   const words = getWordMaster().split('\n').map(s=>s.trim()).filter(Boolean);
   // あいうえお順（日本語・英語混在対応）
-  words.sort((a, b) => a.localeCompare(b, 'ja'));
+  words.sort((a, b) => naturalSort(a, b));
   display.innerHTML = '';
   if (words.length === 0) {
     const empty = document.createElement('div');
@@ -920,10 +930,10 @@ function setupDateTime() {
   const yearItems  = []; for (let y=Y-1;y<=Y+2;y++) yearItems.push({value:String(y),label:String(y)});
   const monthItems = []; for (let mo=1;mo<=12;mo++) monthItems.push({value:String(mo).padStart(2,'0'),label:String(mo)});
   const wY=document.createElement('div'); wY.className='drum-item'; wY.id='drumY'; dateRow.appendChild(wY);
-  selYear = buildDrum('drumY', yearItems, String(Y), '年');
+  selYear = buildDrum('drumY', yearItems, String(Y), '');
   const s1=document.createElement('div'); s1.className='drum-sep'; s1.textContent='/'; dateRow.appendChild(s1);
   const wM=document.createElement('div'); wM.className='drum-item'; wM.id='drumM'; dateRow.appendChild(wM);
-  selMonth = buildDrum('drumM', monthItems, String(M).padStart(2,'0'), '月');
+  selMonth = buildDrum('drumM', monthItems, String(M).padStart(2,'0'), '');
   const s2=document.createElement('div'); s2.className='drum-sep'; s2.textContent='/'; dateRow.appendChild(s2);
   const wD=document.createElement('div'); wD.className='drum-item'; wD.id='drumD'; dateRow.appendChild(wD);
 
@@ -933,7 +943,7 @@ function setupDateTime() {
     const cur = Math.min(keepDay||D, max);
     const dayItems = []; for (let d=1;d<=max;d++) dayItems.push({value:String(d).padStart(2,'0'),label:String(d)});
     document.getElementById('drumD').innerHTML = '';
-    selDay = buildDrum('drumD', dayItems, String(cur).padStart(2,'0'), '日');
+    selDay = buildDrum('drumD', dayItems, String(cur).padStart(2,'0'), '');
   }
   buildDayDrum(D);
 
@@ -954,6 +964,11 @@ function getMeetingDatetime() {
 function updateMemberSelf() {
   // 自社の固定名はgetMembersText()内で自動追加
 }
+// ─── あいうえおABC123順ソート ────────────────────
+function naturalSort(a, b) {
+  return a.localeCompare(b, 'ja', { sensitivity: 'base', numeric: true });
+}
+
 // ─── 参加者マルチ管理（お客様・同行者・自分） ───────────
 const members = { customer: [], companion: [], colleague: [] };
 
@@ -977,12 +992,14 @@ function saveMasterData(data) {
   LS.set('master_data', JSON.stringify(data));
 }
 
-// タグ描画
+// タグ描画（あいうえお順）
 function renderMemberTags(type) {
   const list = document.getElementById(type + 'Tags');
   if (!list) return;
   list.innerHTML = '';
-  members[type].forEach((name, idx) => {
+  const sorted = [...members[type]].sort((a, b) => naturalSort(a, b));
+  sorted.forEach(name => {
+    const idx = members[type].indexOf(name);
     const tag = document.createElement('div');
     tag.className = 'member-tag';
     const txt = document.createElement('span'); txt.textContent = name;
@@ -1013,7 +1030,7 @@ function showPicker(type) {
 
 function renderCompanyList(type, picker) {
   const data = getAllMasterData();
-  const companies = data.companies || [];
+  const companies = [...(data.companies || [])].sort((a,b) => naturalSort(a.company,b.company));
   picker.innerHTML = '';
   picker.style.cssText = 'display:block;background:var(--surface);border:1.5px solid var(--accent2);border-radius:12px;overflow:hidden;margin-top:6px;';
 
@@ -1063,7 +1080,8 @@ function renderPersonList(type, picker, company, persons) {
   back.addEventListener('click', () => renderCompanyList(type, picker));
   picker.appendChild(back);
 
-  persons.forEach(person => {
+  const sortedPersons = [...persons].sort((a,b) => naturalSort(a,b));
+  sortedPersons.forEach(person => {
     const item = document.createElement('div');
     item.style.cssText = 'padding:12px 16px;font-size:14px;cursor:pointer;border-bottom:1px solid var(--border);';
     item.textContent = person;
@@ -1126,12 +1144,20 @@ function resetMembers() {
   });
 }
 
-// 自分の名前表示更新
+// 自分の名前・会社名表示更新
 function updateMemberSelf() {
-  const el = document.getElementById('memberSelf');
-  if (!el) return;
-  const name = getMyName();
-  el.textContent = name ? name + '（記）' : '（設定から登録）';
+  const el      = document.getElementById('memberSelf');
+  const compEl  = document.getElementById('memberCompanyName');
+  const name    = getMyName();
+  const company = getMyCompany();
+  if (el) {
+    el.textContent = name
+      ? (company ? company + ' ' + name + '（記）' : name + '（記）')
+      : '（設定から登録）';
+  }
+  if (compEl) {
+    compEl.textContent = company || '自社';
+  }
 }
 
 // ─── 設定画面：参加者マスター管理（統合） ───────────
@@ -1268,7 +1294,7 @@ function showColleaguePicker() {
   const myCompany = getMyCompany();
   const data      = getAllMasterData();
   const entry     = data.companies.find(c => c.company === myCompany);
-  const persons   = entry ? entry.persons : [];
+  const persons   = entry ? [...entry.persons].sort((a,b) => naturalSort(a,b)) : [];
 
   const header = document.createElement('div');
   header.style.cssText = 'padding:8px 14px;font-size:11px;font-weight:700;color:var(--text-muted);background:var(--surface2);border-bottom:1px solid var(--border);letter-spacing:0.5px;';
@@ -1623,7 +1649,7 @@ async function transcribeWithDeepgram(file) {
 
 // ─── Claude議事録生成（共通化） ──────────────────
 async function generateMinutes(transcript, stepCur, stepTotal) {
-  setProgress(55, '🤖 議事録を生成中...', 'Claude APIで整形しています', stepCur, stepTotal);
+  setProgress(0, '🤖 議事録を生成中...', 'Claude APIで整形しています', stepCur, stepTotal);
   const tpl     = getSelectedTemplate();
   const datetime= getMeetingDatetime();
   const members = getMembersText();
@@ -1667,7 +1693,7 @@ async function generateMinutes(transcript, stepCur, stepTotal) {
 
 // 完了処理（共通）
 function finishProcessing(tStart, sizeMB, usedDeepgram, usage) {
-  setProgress(100, '✅ 完了！', '', '', '');
+  setProgress(100, '✅ 完了！', '', 2, 2);
   const totalSec      = Math.round((Date.now() - tStart) / 1000);
   const inputTokens   = usage?.input_tokens  || 1500;
   const outputTokens  = usage?.output_tokens || 500;
@@ -1723,39 +1749,39 @@ document.getElementById('startBtn').addEventListener('click', async () => {
     const clearActiveTimer = () => { if (activeTimer) { clearInterval(activeTimer); activeTimer = null; } };
 
     if (svc === 'deepgram') {
-      setProgress(10, '📤 Deepgramに送信中...', '', 1, 2);
-      const estSec = Math.max(20, sizeMB * 2);
-      activeTimer  = startFakeUploadProgress(10, 50, estSec, pct => `📤 Deepgramに送信中... ${pct}%`);
+      setProgress(0, '🎙 音声を解析中...', '', 1, 2);
+      const estSec = Math.max(30, sizeMB * 3);
+      activeTimer  = startFakeUploadProgress(0, 100, estSec, pct => `🎙 音声を解析中... ${pct}%`);
       transcriptText = await transcribeWithDeepgram(state.file);
       clearActiveTimer(); usedDeepgram = true;
 
     } else if (sizeMB <= CHUNK_MAX_MB) {
-      setProgress(10, '📤 Groqに送信中...', '', 1, 2);
-      const estSec = Math.max(20, sizeMB * 3);
-      activeTimer  = startFakeUploadProgress(10, 50, estSec, pct => `📤 Groqに送信中... ${pct}%`);
+      setProgress(0, '🎙 音声を解析中...', '', 1, 2);
+      const estSec = Math.max(30, sizeMB * 4.5);
+      activeTimer  = startFakeUploadProgress(0, 100, estSec, pct => `🎙 音声を解析中... ${pct}%`);
       transcriptText = await transcribeBlob(state.file, state.file.name);
       clearActiveTimer();
 
     } else if (fallback === 'deepgram') {
       if (!getDeepgramKey()) throw new Error('Deepgram APIキーが設定されていません。');
-      setProgress(10, '📤 Deepgramに自動切り替え中...', '', 1, 2);
-      const estSec = Math.max(20, sizeMB * 2);
-      activeTimer  = startFakeUploadProgress(10, 50, estSec, pct => `📤 Deepgramに自動切り替え中... ${pct}%`);
+      setProgress(0, '🎙 音声を解析中...', '', 1, 2);
+      const estSec = Math.max(30, sizeMB * 3);
+      activeTimer  = startFakeUploadProgress(0, 100, estSec, pct => `🎙 音声を解析中... ${pct}%`);
       transcriptText = await transcribeWithDeepgram(state.file);
       clearActiveTimer(); usedDeepgram = true;
 
     } else if (fallback === 'split') {
-      setProgress(5, '🔪 音声を分割中...', '', 1, 3);
+      setProgress(5, '✂️ 音声を分割中...', '', 1, 3);
       const chunks = await splitAudioToChunks(state.file);
       const total  = chunks.length;
       const parts  = [];
       for (let i = 0; i < total; i++) {
         const wav    = audioBufferToWavBlob(chunks[i]);
-        const estSec = Math.max(20, (wav.size/1024/1024)*3);
+        const estSec = Math.max(30, (wav.size/1024/1024)*4.5);
         const sp     = Math.round(10 + (i/total)*42);
         const ep     = Math.round(10 + ((i+1)/total)*42);
-        setProgress(sp, `📤 チャンク ${i+1}/${total} 送信中...`, '', i+2, total+2);
-        activeTimer  = startFakeUploadProgress(sp, ep, estSec, pct => `📤 チャンク ${i+1}/${total}... ${pct}%`);
+        setProgress(sp, `🎙 音声を解析中... (${i+1}/${total})`, '', i+2, total+2);
+        activeTimer  = startFakeUploadProgress(0, 100, estSec, pct => `🎙 音声を解析中... (${i+1}/${total}) ${pct}%`);
         parts.push(await transcribeBlob(wav, `chunk_${i+1}.wav`));
         clearActiveTimer();
       }
