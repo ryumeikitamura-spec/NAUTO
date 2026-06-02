@@ -222,7 +222,7 @@
     <div class="header-catch">Less Writing. More Talking.</div>
   </div>
   <div class="header-right">
-    <div class="header-version">v2.2.3</div>
+    <div class="header-version">v2.2.8d</div>
     <div class="settings-btn" id="settingsBtn">⚙️</div>
   </div>
 </div>
@@ -485,6 +485,16 @@
             </div>
           </label>
         </div>
+        <!-- Deepgram選択時のみ表示 -->
+        <div id="deepgramOptions" style="display:none;margin-top:8px;">
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 14px;background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;">
+            <input type="checkbox" id="diarizeEnabled" style="width:18px;height:18px;cursor:pointer;">
+            <div>
+              <div style="font-size:14px;font-weight:600;color:var(--text);">話者識別</div>
+              <div style="font-size:12px;color:var(--text-muted);">誰が話したか識別（やや処理が遅くなります）</div>
+            </div>
+          </label>
+        </div>
         <div id="groqFallbackSection" style="display:none;margin-top:8px;">
           <div class="label" style="margin-bottom:8px;">⚠️ 25MB超ファイルの処理</div>
           <div class="service-select-group">
@@ -656,7 +666,7 @@ const getGroqKey       = () => LS.get('groq_key');
 const getDeepgramKey   = () => LS.get('deepgram_key');
 const getAnthropicKey  = () => LS.get('anthropic_key');
 const getMailTo        = () => LS.get('mail_to');
-const getSttService    = () => LS.get('stt_service') || 'groq';
+const getDiarize       = () => LS.get('diarize') === 'true';
 const getGroqFallback  = () => LS.get('groq_fallback') || 'deepgram';
 
 // ─── テンプレート管理 ────────────────────────
@@ -891,7 +901,7 @@ document.getElementById('importAllFile').addEventListener('change', e => {
       document.querySelector(`input[name="groqFallback"][value="${fb}"]`).checked = true;
       updateGroqFallbackVisibility();
       renderTemplateList(); updateTemplateSelect();
-      ['customer','maker','self'].forEach(t => renderMasterList(t));
+      renderMasterList();
       updateMemberSelf(); updateApiStatus(); updateStartBtn();
       showToast('一括インポートしました');
     } catch(err) { showToast('読み込みに失敗しました: ' + err.message); }
@@ -1432,6 +1442,7 @@ function openModal() {
   document.querySelector(`input[name="sttService"][value="${svc}"]`).checked = true;
   const fb  = getGroqFallback();
   document.querySelector(`input[name="groqFallback"][value="${fb}"]`).checked = true;
+  document.getElementById('diarizeEnabled').checked = getDiarize();
   updateGroqFallbackVisibility();
 
   renderTemplateList();
@@ -1441,8 +1452,14 @@ function openModal() {
 function closeModal(){document.getElementById('modalOverlay').classList.remove('open');}
 // Groq選択時のみフォールバック選択を表示
 function updateGroqFallbackVisibility() {
-  const isGroq = document.querySelector('input[name="sttService"]:checked')?.value === 'groq';
-  document.getElementById('groqFallbackSection').style.display = isGroq ? 'block' : 'none';
+  const checked = document.querySelector('input[name="sttService"]:checked');
+  const svc     = checked?.value;
+  const isGroq  = svc === 'groq';
+  const isDgram = svc === 'deepgram';
+  const groqEl  = document.getElementById('groqFallbackSection');
+  const dgEl    = document.getElementById('deepgramOptions');
+  if (groqEl) groqEl.style.display = isGroq  ? 'block' : 'none';
+  if (dgEl)   dgEl.style.display   = isDgram ? 'block' : 'none';
 }
 document.querySelectorAll('input[name="sttService"]').forEach(r =>
   r.addEventListener('change', updateGroqFallbackVisibility)
@@ -1463,6 +1480,7 @@ document.getElementById('saveSettings').addEventListener('click',()=>{
   LS.set('word_master',    document.getElementById('wordMaster').value.trim());
   LS.set('stt_service',    document.querySelector('input[name="sttService"]:checked')?.value || 'groq');
   LS.set('groq_fallback',  document.querySelector('input[name="groqFallback"]:checked')?.value || 'deepgram');
+  LS.set('diarize',        document.getElementById('diarizeEnabled').checked ? 'true' : 'false');
   closeModal(); updateMemberSelf(); updateApiStatus(); updateStartBtn();
   showToast('設定を保存しました');
 });
@@ -1632,12 +1650,12 @@ async function transcribeWithDeepgram(file) {
   const wordList = getWordMaster().split('\n').map(s=>s.trim()).filter(Boolean);
   const keywordsParam = wordList.map(w => `keywords=${encodeURIComponent(w)}:1`).join('&');
 
-  // ① 話者識別（diarize=true）+ キーターム
+  // ① 話者識別（設定でオンの場合のみ）+ キーターム
   const params = [
     'model=nova-3',
     'language=ja',
     'smart_format=false',
-    'diarize=true',
+    getDiarize() ? 'diarize=true' : '',
     keywordsParam,
   ].filter(Boolean).join('&');
 
@@ -1657,26 +1675,27 @@ async function transcribeWithDeepgram(file) {
     }
     const data = await res.json();
 
-    // 話者識別結果をテキスト化
-    const words = data?.results?.channels?.[0]?.alternatives?.[0]?.words || [];
-    if (words.length > 0 && words[0].speaker !== undefined) {
-      // 話者ごとにまとめてテキスト化
-      let transcript = '';
-      let currentSpeaker = null;
-      let currentText = '';
-      words.forEach(w => {
-        if (w.speaker !== currentSpeaker) {
-          if (currentText.trim()) transcript += `話者${currentSpeaker}：${currentText.trim()}\n`;
-          currentSpeaker = w.speaker;
-          currentText = '';
-        }
-        currentText += w.punctuated_word || w.word || '';
-        currentText += ' ';
-      });
-      if (currentText.trim()) transcript += `話者${currentSpeaker}：${currentText.trim()}`;
-      return transcript;
+    // 話者識別オンの場合はwords配列からテキスト化
+    if (getDiarize()) {
+      const words = data?.results?.channels?.[0]?.alternatives?.[0]?.words || [];
+      if (words.length > 0 && words[0].speaker !== undefined) {
+        let transcript = '';
+        let currentSpeaker = null;
+        let currentText = '';
+        words.forEach(w => {
+          if (w.speaker !== currentSpeaker) {
+            if (currentText.trim()) transcript += `話者${currentSpeaker}：${currentText.trim()}\n`;
+            currentSpeaker = w.speaker;
+            currentText = '';
+          }
+          currentText += w.punctuated_word || w.word || '';
+          currentText += ' ';
+        });
+        if (currentText.trim()) transcript += `話者${currentSpeaker}：${currentText.trim()}`;
+        return transcript;
+      }
     }
-    // 話者識別なしの場合は通常テキスト
+    // 話者識別オフ or wordsなしの場合は通常テキスト
     return data?.results?.channels?.[0]?.alternatives?.[0]?.transcript || '';
   } catch(err) {
     if (err.name === 'AbortError') throw new Error('タイムアウト：Deepgram APIからの応答がありません。');
@@ -1795,24 +1814,24 @@ document.getElementById('startBtn').addEventListener('click', async () => {
     const clearActiveTimer = () => { if (activeTimer) { clearInterval(activeTimer); activeTimer = null; } };
 
     if (svc === 'deepgram') {
-      setProgress(0, '🎙 音声を解析中...', '', 1, 2);
+      setProgress(0, '🎙 音声を解析中... [Deepgram]', '', 1, 2);
       const estSec = Math.max(30, sizeMB * 3);
-      activeTimer  = startFakeUploadProgress(0, 100, estSec, pct => `🎙 音声を解析中... ${pct}%`);
+      activeTimer  = startFakeUploadProgress(0, 100, estSec, pct => `🎙 音声を解析中... ${pct}% [Deepgram]`);
       transcriptText = await transcribeWithDeepgram(state.file);
       clearActiveTimer(); usedDeepgram = true;
 
     } else if (sizeMB <= CHUNK_MAX_MB) {
-      setProgress(0, '🎙 音声を解析中...', '', 1, 2);
+      setProgress(0, '🎙 音声を解析中... [Groq]', '', 1, 2);
       const estSec = Math.max(20, sizeMB * 3);
-      activeTimer  = startFakeUploadProgress(0, 100, estSec, pct => `🎙 音声を解析中... ${pct}%`);
+      activeTimer  = startFakeUploadProgress(0, 100, estSec, pct => `🎙 音声を解析中... ${pct}% [Groq]`);
       transcriptText = await transcribeBlob(state.file, state.file.name);
       clearActiveTimer();
 
     } else if (fallback === 'deepgram') {
       if (!getDeepgramKey()) throw new Error('Deepgram APIキーが設定されていません。');
-      setProgress(0, '🎙 音声を解析中...', '', 1, 2);
+      setProgress(0, '🎙 音声を解析中... [Deepgram]', '', 1, 2);
       const estSec = Math.max(30, sizeMB * 3);
-      activeTimer  = startFakeUploadProgress(0, 100, estSec, pct => `🎙 音声を解析中... ${pct}%`);
+      activeTimer  = startFakeUploadProgress(0, 100, estSec, pct => `🎙 音声を解析中... ${pct}% [Deepgram]`);
       transcriptText = await transcribeWithDeepgram(state.file);
       clearActiveTimer(); usedDeepgram = true;
 
@@ -1826,8 +1845,8 @@ document.getElementById('startBtn').addEventListener('click', async () => {
         const estSec = Math.max(20, (wav.size/1024/1024)*3);
         const sp     = Math.round(10 + (i/total)*42);
         const ep     = Math.round(10 + ((i+1)/total)*42);
-        setProgress(sp, `🎙 音声を解析中... (${i+1}/${total})`, '', i+2, total+2);
-        activeTimer  = startFakeUploadProgress(0, 100, estSec, pct => `🎙 音声を解析中... (${i+1}/${total}) ${pct}%`);
+        setProgress(sp, `🎙 音声を解析中... (${i+1}/${total}) [Groq]`, '', i+2, total+2);
+        activeTimer  = startFakeUploadProgress(0, 100, estSec, pct => `🎙 音声を解析中... (${i+1}/${total}) ${pct}% [Groq]`);
         parts.push(await transcribeBlob(wav, `chunk_${i+1}.wav`));
         clearActiveTimer();
       }
@@ -2058,18 +2077,22 @@ document.getElementById('resetBtn').addEventListener('click',()=>{
 });
 
 // ─── 初期化 ──────────────────────────────────
-initTemplates();
-setupDateTime();
-updateMemberSelf();
-updateApiStatus();
-updateStartBtn();
-updateTemplateSelect();
-updateGroqFallbackVisibility();
+try {
+  initTemplates();
+  setupDateTime();
+  updateMemberSelf();
+  updateApiStatus();
+  updateStartBtn();
+  updateTemplateSelect();
 
-// 参加者追加ボタンのイベント登録
-document.getElementById('addCustomerBtn').addEventListener('click', () => showPicker('customer'));
-document.getElementById('addCompanionBtn').addEventListener('click', () => showPicker('companion'));
-document.getElementById('addColleagueBtn').addEventListener('click', () => showColleaguePicker());
+  // 参加者追加ボタンのイベント登録
+  document.getElementById('addCustomerBtn').addEventListener('click', () => showPicker('customer'));
+  document.getElementById('addCompanionBtn').addEventListener('click', () => showPicker('companion'));
+  document.getElementById('addColleagueBtn').addEventListener('click', () => showColleaguePicker());
+} catch(e) {
+  // エラー内容をアラートで表示（デバッグ用）
+  alert('初期化エラー: ' + e.message + '\n' + e.stack);
+}
 </script>
 </body>
 </html>
