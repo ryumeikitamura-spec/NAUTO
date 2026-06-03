@@ -2102,12 +2102,42 @@ function finishProcessing(tStart, sizeMB, usedDeepgram, usage) {
     `<span class="tag ${usedDeepgram?'warn':'ok'}">${sttLabel}</span>` +
     `<span class="tag ok">Claude: 約${claudeJPY}円</span>` +
     `<span class="tag ok">合計: ${totalJPY<=1?'〜1円':'約'+totalJPY+'円'}</span>`;
-  setTimeout(() => {
+  setTimeout(async () => {
     document.getElementById('minutesResult').textContent    = state.minutes;
     document.getElementById('minutesEdit').value            = state.minutes;
     document.getElementById('transcriptResult').textContent = state.transcript;
     document.getElementById('chatHistory').innerHTML        = '';
     state.chatHistory = [];
+
+    // 議題が空の場合、議事録から自動生成
+    const topicEl = document.getElementById('meetingTopic');
+    if (!topicEl.value.trim()) {
+      try {
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': getAnthropicKey(),
+            'anthropic-version': '2023-06-01',
+            'anthropic-dangerous-direct-browser-access': 'true',
+          },
+          body: JSON.stringify({
+            model: 'claude-sonnet-4-5',
+            max_tokens: 50,
+            messages: [{
+              role: 'user',
+              content: `以下の議事録の内容から、議題を10〜20文字以内の簡潔な日本語で1つだけ生成してください。記号・句読点は不要です。議題のテキストのみ出力してください。\n\n${state.minutes.slice(0, 500)}`
+            }]
+          })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const topic = data.content?.[0]?.text?.trim() || '';
+          if (topic) topicEl.value = topic;
+        }
+      } catch(e) {}
+    }
+
     // 議事録を履歴に保存
     saveToHistory();
     setStep(3);
