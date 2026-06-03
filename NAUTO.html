@@ -242,7 +242,7 @@
     <div class="header-catch">Less Writing.<br>More Talking.</div>
   </div>
   <div class="header-right">
-    <div class="header-version">v2.5.0d</div>
+    <div class="header-version">v2.5.0</div>
     <div style="display:flex;gap:8px;">
       <div class="settings-btn" id="historyHeaderBtn" style="font-size:16px;">📚</div>
       <div class="settings-btn" id="helpBtn" style="font-size:15px;font-weight:700;">?</div>
@@ -687,13 +687,6 @@
           <div class="label" style="margin-bottom:8px;">⚠️ 25MB超ファイルの処理</div>
           <div class="service-select-group">
             <label class="service-radio">
-              <input type="radio" name="groqFallback" id="fbConvert" value="convert">
-              <div class="service-radio-box">
-                <div class="service-radio-title">16kHz変換してGroqで再試行</div>
-                <div class="service-radio-desc">失敗時はDeepgramに自動切替・推奨</div>
-              </div>
-            </label>
-            <label class="service-radio">
               <input type="radio" name="groqFallback" id="fbDeepgram" value="deepgram">
               <div class="service-radio-box">
                 <div class="service-radio-title">Deepgramに自動切り替え</div>
@@ -1001,7 +994,7 @@ const getDeepgramModel      = () => LS.get('deepgram_model')       || 'nova-3';
 const getDeepgramLanguage   = () => LS.get('deepgram_language')    || 'ja';
 const getDeepgramSmartFormat= () => LS.get('deepgram_smart_format') === 'true';
 const getDeepgramSendKeyterm= () => LS.get('deepgram_send_keyterm') !== 'false';
-const getGroqFallback  = () => LS.get('groq_fallback') || 'convert';
+const getGroqFallback  = () => LS.get('groq_fallback') || 'deepgram';
 // 詳細設定
 const getGroqCoeff          = () => parseFloat(LS.get('groq_coeff'))      || 3;
 const getDeepgramCoeff      = () => parseFloat(LS.get('deepgram_coeff'))  || 3;
@@ -2116,60 +2109,6 @@ function audioBufferToWavBlob(buffer) {
   return new Blob([arrayBuf], { type: 'audio/wav' });
 }
 
-// ─── 16kHz AAC変換（MediaRecorder） ─────────────
-async function convertTo16kAAC(file) {
-  const TARGET_SR  = 16000;
-  const arrayBuf   = await file.arrayBuffer();
-  const decodeCtx  = new (window.AudioContext || window.webkitAudioContext)();
-  const decoded    = await decodeCtx.decodeAudioData(arrayBuf);
-  await decodeCtx.close();
-
-  // OfflineAudioContextで16kHz・モノラルにリサンプリング
-  const duration   = decoded.duration;
-  const offlineCtx = new OfflineAudioContext(1, Math.ceil(duration * TARGET_SR), TARGET_SR);
-  const src        = offlineCtx.createBufferSource();
-  src.buffer       = decoded;
-  src.connect(offlineCtx.destination);
-  src.start(0);
-  const resampled  = await offlineCtx.startRendering();
-
-  // MediaRecorderでAAC/MP4エンコード
-  const streamCtx  = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: TARGET_SR });
-  const buffer     = streamCtx.createBuffer(1, resampled.length, TARGET_SR);
-  buffer.copyToChannel(resampled.getChannelData(0), 0);
-  const src2       = streamCtx.createBufferSource();
-  src2.buffer      = buffer;
-  const dest       = streamCtx.createMediaStreamDestination();
-  src2.connect(dest);
-
-  // iPhoneはaudio/mp4（AAC）に対応
-  const mimeType   = MediaRecorder.isTypeSupported('audio/mp4')            ? 'audio/mp4'
-                   : MediaRecorder.isTypeSupported('audio/aac')            ? 'audio/aac'
-                   : MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus'
-                   : 'audio/webm';
-
-  return new Promise((resolve, reject) => {
-    const chunks    = [];
-    const recorder  = new MediaRecorder(dest.stream, {
-      mimeType,
-      audioBitsPerSecond: 32000, // 32kbps
-    });
-    recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
-    recorder.onstop = () => {
-      streamCtx.close();
-      const blob = new Blob(chunks, { type: mimeType });
-      resolve(blob);
-    };
-    recorder.onerror = e => { streamCtx.close(); reject(e.error); };
-    src2.start(0);
-    recorder.start();
-    // 音声の長さ分録音後に停止
-    setTimeout(() => {
-      try { recorder.stop(); src2.stop(); } catch(e) {}
-    }, duration * 1000 + 500);
-  });
-}
-
 // ─── Deepgram送信 ────────────────────────────
 async function transcribeWithDeepgram(file) {
   const controller = new AbortController();
@@ -2405,33 +2344,13 @@ document.getElementById('startBtn').addEventListener('click', async () => {
       transcriptText = await transcribeBlob(state.file, state.file.name);
       clearActiveTimer();
 
-    } else if (fallback === 'convert' || fallback === 'deepgram') {
-      // 16kHz変換してGroqで試みる（convert選択時 or deepgram選択時も試みる）
-      let converted16k = null;
-      try {
-        setProgress(0, '🔄 16kHz AAC変換中...', '', 1, 2);
-        converted16k = await convertTo16kAAC(state.file);
-        const convertedMB = converted16k.size / 1024 / 1024;
-        showToast(`AAC変換後：${convertedMB.toFixed(1)}MB`);
-        if (convertedMB <= CHUNK_MAX_MB) {
-          setProgress(0, '🎙 音声を解析中... [Groq 16kHz]', '', 1, 2);
-          const estSec = Math.max(20, convertedMB * getGroqCoeff());
-          activeTimer = startFakeUploadProgress(0, 100, estSec, pct => `🎙 音声を解析中... ${pct}% [Groq 16kHz]`);
-          transcriptText = await transcribeBlob(converted16k, 'converted_16k.wav');
-          clearActiveTimer();
-        } else {
-          throw new Error('変換後もサイズ超過');
-        }
-      } catch(convErr) {
-        // 変換失敗またはまだ25MB超→Deepgramにフォールバック
-        clearActiveTimer();
-        if (!getDeepgramKey()) throw new Error('Deepgram APIキーが設定されていません。');
-        setProgress(0, '🎙 音声を解析中... [Deepgram]', '', 1, 2);
-        const estSec = Math.max(30, sizeMB * getDeepgramCoeff());
-        activeTimer = startFakeUploadProgress(0, 100, estSec, pct => `🎙 音声を解析中... ${pct}% [Deepgram]`);
-        transcriptText = await transcribeWithDeepgram(state.file);
-        clearActiveTimer(); usedDeepgram = true;
-      }
+    } else if (fallback === 'deepgram') {
+      if (!getDeepgramKey()) throw new Error('Deepgram APIキーが設定されていません。');
+      setProgress(0, '🎙 音声を解析中... [Deepgram]', '', 1, 2);
+      const estSec = Math.max(30, sizeMB * getDeepgramCoeff());
+      activeTimer  = startFakeUploadProgress(0, 100, estSec, pct => `🎙 音声を解析中... ${pct}% [Deepgram]`);
+      transcriptText = await transcribeWithDeepgram(state.file);
+      clearActiveTimer(); usedDeepgram = true;
 
     } else if (fallback === 'split') {
       setProgress(5, '✂️ 音声を分割中...', '', 1, 3);
