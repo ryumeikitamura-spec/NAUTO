@@ -242,7 +242,7 @@
     <div class="header-catch">Less Writing.<br>More Talking.</div>
   </div>
   <div class="header-right">
-    <div class="header-version">v2.4.6d</div>
+    <div class="header-version">v2.4.8</div>
     <div style="display:flex;gap:8px;">
       <div class="settings-btn" id="historyHeaderBtn" style="font-size:16px;">📚</div>
       <div class="settings-btn" id="helpBtn" style="font-size:15px;font-weight:700;">?</div>
@@ -682,18 +682,17 @@
           </label>
         </div>
         <!-- Deepgram選択時のみ表示 -->
-        <div id="deepgramOptions" style="display:none;margin-top:8px;">
-          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 14px;background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;">
-            <input type="checkbox" id="diarizeEnabled" style="width:18px;height:18px;cursor:pointer;">
-            <div>
-              <div style="font-size:14px;font-weight:600;color:var(--text);">話者識別</div>
-              <div style="font-size:12px;color:var(--text-muted);">誰が話したか識別（やや処理が遅くなります）</div>
-            </div>
-          </label>
-        </div>
+        <div id="deepgramOptions" style="display:none;"></div>
         <div id="groqFallbackSection" style="display:none;margin-top:8px;">
           <div class="label" style="margin-bottom:8px;">⚠️ 25MB超ファイルの処理</div>
           <div class="service-select-group">
+            <label class="service-radio">
+              <input type="radio" name="groqFallback" id="fbConvert" value="convert">
+              <div class="service-radio-box">
+                <div class="service-radio-title">16kHz変換してGroqで再試行</div>
+                <div class="service-radio-desc">失敗時はDeepgramに自動切替・推奨</div>
+              </div>
+            </label>
             <label class="service-radio">
               <input type="radio" name="groqFallback" id="fbDeepgram" value="deepgram">
               <div class="service-radio-box">
@@ -757,9 +756,99 @@
 
         <div class="input-group">
           <div class="label">Claudeへの固定指示（冒頭プロンプト）</div>
-          <textarea id="claudeSystemPrompt" rows="6" style="font-size:12px;resize:vertical;min-height:120px;" placeholder="以下は製造業・工作機械業界の商談音声文字起こしです..."></textarea>
-          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">空白の場合はデフォルトの指示が使用されます</div>
+          <textarea id="claudeSystemPrompt" rows="6" style="font-size:12px;resize:vertical;min-height:120px;" placeholder="以下は製造業・工作機械業界の商談音声文字起こしです。
+専門用語（CNC・ATC・マシニングセンタ・NC旋盤・パレットチェンジャー・ロボドリル・研削盤・放電加工機・BT30・HSK等）を正確に認識し、テンプレートの指示に従って日本語で議事録を作成してください。
+【厳守事項】
+・文字起こしに含まれない内容は追加しないでください。
+・マークダウン記法（#・##・**・*・---など）は一切使用しないでください。
+・冒頭にタイトル行は不要です。
+・テンプレートで指定したセクション以外は絶対に追加しないでください。
+・出力はテンプレートのフォーマットのみとし、余計なセクションは一切追加しないでください。"></textarea>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">空白の場合はデフォルトの指示（上記）が使用されます</div>
         </div>
+
+        <div class="modal-divider" style="margin:8px 0;"></div>
+        <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;">🎙 Groq Whisperパラメータ</div>
+
+        <div class="input-group">
+          <div class="label">モデル</div>
+          <select id="groqModel" style="padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;background:var(--surface);color:var(--text);">
+            <option value="whisper-large-v3">whisper-large-v3（高精度）</option>
+            <option value="whisper-large-v3-turbo">whisper-large-v3-turbo（高速）</option>
+            <option value="distil-whisper-large-v3-en">distil-whisper-large-v3-en（英語専用）</option>
+          </select>
+        </div>
+
+        <div class="input-group">
+          <div class="label">言語</div>
+          <select id="groqLanguage" style="padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;background:var(--surface);color:var(--text);">
+            <option value="ja">🇯🇵 日本語</option>
+            <option value="en">🇺🇸 英語</option>
+            <option value="">🌐 自動検出</option>
+          </select>
+        </div>
+
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 14px;background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;">
+          <input type="checkbox" id="groqSendWordMaster" style="width:18px;height:18px;cursor:pointer;">
+          <div>
+            <div style="font-size:14px;font-weight:600;color:var(--text);">単語マスタをGroqに送る</div>
+            <div style="font-size:12px;color:var(--text-muted);">専門用語をpromptパラメータとして渡し認識精度を向上</div>
+          </div>
+        </label>
+
+        <div class="input-group">
+          <div class="label">Temperature（0〜1）</div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <input type="range" id="groqTemperature" min="0" max="1" step="0.1" value="0" style="flex:1;">
+            <span id="groqTemperatureVal" style="font-size:13px;font-weight:600;color:var(--accent2);min-width:24px;">0</span>
+          </div>
+          <div style="font-size:10px;color:var(--text-muted);">0=正確・安定　1=ランダム・多様</div>
+        </div>
+
+        <div class="modal-divider" style="margin:8px 0;"></div>
+        <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;">🎤 Deepgramパラメータ</div>
+
+        <div class="input-group">
+          <div class="label">モデル</div>
+          <select id="deepgramModel" style="padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;background:var(--surface);color:var(--text);">
+            <option value="nova-3">nova-3（推奨・高精度）</option>
+            <option value="nova-2">nova-2（高速）</option>
+            <option value="nova-3-medical">nova-3-medical（医療専用）</option>
+          </select>
+        </div>
+
+        <div class="input-group">
+          <div class="label">言語</div>
+          <select id="deepgramLanguage" style="padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;background:var(--surface);color:var(--text);">
+            <option value="ja">🇯🇵 日本語</option>
+            <option value="en">🇺🇸 英語</option>
+            <option value="multi">🌐 多言語（自動）</option>
+          </select>
+        </div>
+
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 14px;background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;">
+          <input type="checkbox" id="diarizeEnabled" style="width:18px;height:18px;cursor:pointer;">
+          <div>
+            <div style="font-size:14px;font-weight:600;color:var(--text);">話者識別</div>
+            <div style="font-size:12px;color:var(--text-muted);">誰が話したか識別（やや処理が遅くなります）</div>
+          </div>
+        </label>
+
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 14px;background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;">
+          <input type="checkbox" id="deepgramSmartFormat" style="width:18px;height:18px;cursor:pointer;">
+          <div>
+            <div style="font-size:14px;font-weight:600;color:var(--text);">スマートフォーマット</div>
+            <div style="font-size:12px;color:var(--text-muted);">句読点・数字・大文字を自動整形</div>
+          </div>
+        </label>
+
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 14px;background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;">
+          <input type="checkbox" id="deepgramSendKeyterm" style="width:18px;height:18px;cursor:pointer;" checked>
+          <div>
+            <div style="font-size:14px;font-weight:600;color:var(--text);">単語マスタをKeytermとして送る</div>
+            <div style="font-size:12px;color:var(--text-muted);">専門用語・固有名詞の認識精度を向上</div>
+          </div>
+        </label>
 
       </div>
     </details>
@@ -907,14 +996,22 @@ const getDeepgramKey   = () => LS.get('deepgram_key');
 const getAnthropicKey  = () => LS.get('anthropic_key');
 const getMailTo        = () => LS.get('mail_to');
 const getSttService    = () => LS.get('stt_service') || 'groq';
-const getDiarize       = () => LS.get('diarize') === 'true';
-const getGroqFallback  = () => LS.get('groq_fallback') || 'deepgram';
+const getDiarize            = () => LS.get('diarize') === 'true';
+const getDeepgramModel      = () => LS.get('deepgram_model')       || 'nova-3';
+const getDeepgramLanguage   = () => LS.get('deepgram_language')    || 'ja';
+const getDeepgramSmartFormat= () => LS.get('deepgram_smart_format') === 'true';
+const getDeepgramSendKeyterm= () => LS.get('deepgram_send_keyterm') !== 'false';
+const getGroqFallback  = () => LS.get('groq_fallback') || 'convert';
 // 詳細設定
 const getGroqCoeff          = () => parseFloat(LS.get('groq_coeff'))      || 3;
 const getDeepgramCoeff      = () => parseFloat(LS.get('deepgram_coeff'))  || 3;
 const getClaudeCoeff        = () => parseFloat(LS.get('claude_coeff'))    || 500;
 const getMaxTokens          = () => parseInt(LS.get('max_tokens'))        || 4096;
 const getClaudeSystemPrompt = () => LS.get('claude_system_prompt') || '';
+const getGroqModel          = () => LS.get('groq_model')    || 'whisper-large-v3';
+const getGroqLanguage       = () => LS.get('groq_language') ?? 'ja';
+const getGroqTemperature    = () => parseFloat(LS.get('groq_temperature')) || 0;
+const getGroqSendWordMaster = () => LS.get('groq_send_word_master') !== 'false'; // デフォルトtrue
 
 // ─── テンプレート管理 ────────────────────────
 function getTemplates() {
@@ -1108,6 +1205,14 @@ document.getElementById('exportAllBtn').addEventListener('click', () => {
     claude_coeff:         getClaudeCoeff(),
     max_tokens:           getMaxTokens(),
     claude_system_prompt: getClaudeSystemPrompt(),
+    groq_model:           getGroqModel(),
+    groq_language:        getGroqLanguage(),
+    groq_temperature:     getGroqTemperature(),
+    groq_send_word_master:getGroqSendWordMaster() ? 'true' : 'false',
+    deepgram_model:       getDeepgramModel(),
+    deepgram_language:    getDeepgramLanguage(),
+    deepgram_smart_format:getDeepgramSmartFormat() ? 'true' : 'false',
+    deepgram_send_keyterm:getDeepgramSendKeyterm() ? 'true' : 'false',
     master_data:   LS.get('master_data'),
     word_master:   getWordMaster(),
   };
@@ -1139,6 +1244,14 @@ document.getElementById('importAllFile').addEventListener('change', e => {
       if (data.claude_coeff)         LS.set('claude_coeff',         data.claude_coeff);
       if (data.max_tokens)           LS.set('max_tokens',           data.max_tokens);
       if (data.claude_system_prompt) LS.set('claude_system_prompt', data.claude_system_prompt);
+      if (data.groq_model)            LS.set('groq_model',            data.groq_model);
+      if (data.groq_language)         LS.set('groq_language',         data.groq_language);
+      if (data.groq_temperature)      LS.set('groq_temperature',      data.groq_temperature);
+      if (data.groq_send_word_master) LS.set('groq_send_word_master', data.groq_send_word_master);
+      if (data.deepgram_model)        LS.set('deepgram_model',        data.deepgram_model);
+      if (data.deepgram_language)     LS.set('deepgram_language',     data.deepgram_language);
+      if (data.deepgram_smart_format) LS.set('deepgram_smart_format', data.deepgram_smart_format);
+      if (data.deepgram_send_keyterm) LS.set('deepgram_send_keyterm', data.deepgram_send_keyterm);
       // データ
       if (data.templates)     saveTemplates(data.templates);
       if (data.master_data)   LS.set('master_data',    data.master_data);
@@ -1738,7 +1851,12 @@ function openModal() {
   document.getElementById('claudeCoeff').value         = getClaudeCoeff();
   document.getElementById('maxTokens').value           = getMaxTokens();
   document.getElementById('claudeSystemPrompt').value  = getClaudeSystemPrompt();
+  document.getElementById('groqModel').value           = getGroqModel();
+  document.getElementById('groqLanguage').value        = getGroqLanguage();
+  document.getElementById('groqTemperature').value     = getGroqTemperature();
+  document.getElementById('groqTemperatureVal').textContent = getGroqTemperature();
   renderWordMasterDisplay();
+  document.getElementById('groqSendWordMaster').checked    = getGroqSendWordMaster();
   // 参加者マスターはdetails展開時に描画
   const masterDetails = document.getElementById('masterDetails');
   if (masterDetails) {
@@ -1753,12 +1871,21 @@ function openModal() {
   document.querySelector(`input[name="sttService"][value="${svc}"]`).checked = true;
   const fb  = getGroqFallback();
   document.querySelector(`input[name="groqFallback"][value="${fb}"]`).checked = true;
-  document.getElementById('diarizeEnabled').checked = getDiarize();
+  document.getElementById('diarizeEnabled').checked       = getDiarize();
+  document.getElementById('deepgramModel').value          = getDeepgramModel();
+  document.getElementById('deepgramLanguage').value       = getDeepgramLanguage();
+  document.getElementById('deepgramSmartFormat').checked  = getDeepgramSmartFormat();
+  document.getElementById('deepgramSendKeyterm').checked  = getDeepgramSendKeyterm();
   updateGroqFallbackVisibility();
 
   renderTemplateList();
   resetEditor();
   document.getElementById('modalOverlay').classList.add('open');
+  // Temperatureスライダーのリアルタイム表示
+  const tempSlider = document.getElementById('groqTemperature');
+  const tempVal    = document.getElementById('groqTemperatureVal');
+  if (tempSlider) tempSlider.oninput = () => tempVal.textContent = tempSlider.value;
+
   // 係数プレビューのイベント登録
   ['groqCoeff','deepgramCoeff','claudeCoeff'].forEach(id => {
     const el = document.getElementById(id);
@@ -1800,9 +1927,17 @@ document.getElementById('saveSettings').addEventListener('click',()=>{
   LS.set('claude_coeff',         document.getElementById('claudeCoeff').value);
   LS.set('max_tokens',           document.getElementById('maxTokens').value);
   LS.set('claude_system_prompt', document.getElementById('claudeSystemPrompt').value.trim());
+  LS.set('groq_model',           document.getElementById('groqModel').value);
+  LS.set('groq_language',        document.getElementById('groqLanguage').value.trim());
+  LS.set('groq_temperature',     document.getElementById('groqTemperature').value);
+  LS.set('groq_send_word_master',document.getElementById('groqSendWordMaster').checked ? 'true' : 'false');
   LS.set('stt_service',    document.querySelector('input[name="sttService"]:checked')?.value || 'groq');
   LS.set('groq_fallback',  document.querySelector('input[name="groqFallback"]:checked')?.value || 'deepgram');
-  LS.set('diarize',        document.getElementById('diarizeEnabled').checked ? 'true' : 'false');
+  LS.set('diarize',              document.getElementById('diarizeEnabled').checked ? 'true' : 'false');
+  LS.set('deepgram_model',       document.getElementById('deepgramModel').value);
+  LS.set('deepgram_language',    document.getElementById('deepgramLanguage').value);
+  LS.set('deepgram_smart_format',document.getElementById('deepgramSmartFormat').checked ? 'true' : 'false');
+  LS.set('deepgram_send_keyterm',document.getElementById('deepgramSendKeyterm').checked ? 'true' : 'false');
   closeModal(); updateMemberSelf(); updateApiStatus(); updateStartBtn();
   showToast('設定を保存しました');
 });
@@ -1858,14 +1993,21 @@ function startFakeUploadProgress(startPct, targetPct, estimatedSec, labelFn) {
 async function transcribeBlob(blob, filename) {
   const formData = new FormData();
   formData.append('file', blob, filename);
-  formData.append('model', 'whisper-large-v3');
+  formData.append('model', getGroqModel());
   formData.append('language', 'ja');
   formData.append('response_format', 'text');
+  // language設定（空白=自動検出）
+  const lang = getGroqLanguage().trim();
+  if (lang) formData.append('language', lang);
+  // temperature
+  formData.append('temperature', getGroqTemperature());
 
-  // ③ 単語マスタをGroqのpromptパラメータに渡す（専門用語の認識精度向上）
-  const wordList = getWordMaster().split('\n').map(s=>s.trim()).filter(Boolean);
-  if (wordList.length > 0) {
-    formData.append('prompt', wordList.join('、'));
+  // ③ 単語マスタをGroqのpromptパラメータに渡す（設定でオンの場合のみ）
+  if (getGroqSendWordMaster()) {
+    const wordList = getWordMaster().split('\n').map(s=>s.trim()).filter(Boolean);
+    if (wordList.length > 0) {
+      formData.append('prompt', wordList.join('、'));
+    }
   }
 
   const controller = new AbortController();
@@ -1955,6 +2097,63 @@ function audioBufferToWavBlob(buffer) {
   return new Blob([arrayBuf], { type: 'audio/wav' });
 }
 
+// ─── 16kHz WAV変換 ───────────────────────────
+async function convertTo16kWav(file) {
+  const TARGET_SR = 16000;
+  const arrayBuf  = await file.arrayBuffer();
+  const audioCtx  = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: TARGET_SR });
+  const decoded   = await audioCtx.decodeAudioData(arrayBuf);
+
+  // モノラルにミックスダウン
+  const monoLen   = decoded.length;
+  const monoData  = new Float32Array(monoLen);
+  for (let ch = 0; ch < decoded.numberOfChannels; ch++) {
+    const chData = decoded.getChannelData(ch);
+    for (let i = 0; i < monoLen; i++) {
+      monoData[i] += chData[i] / decoded.numberOfChannels;
+    }
+  }
+  await audioCtx.close();
+
+  // リサンプリング（元のSRが16kHzでない場合）
+  let finalData = monoData;
+  if (decoded.sampleRate !== TARGET_SR) {
+    const ratio  = decoded.sampleRate / TARGET_SR;
+    const newLen = Math.round(monoLen / ratio);
+    const resampled = new Float32Array(newLen);
+    for (let i = 0; i < newLen; i++) {
+      const src = i * ratio;
+      const lo  = Math.floor(src);
+      const hi  = Math.min(lo + 1, monoLen - 1);
+      const frac = src - lo;
+      resampled[i] = monoData[lo] * (1 - frac) + monoData[hi] * frac;
+    }
+    finalData = resampled;
+  }
+
+  // WAVバイナリ生成
+  const wavBuf = new ArrayBuffer(44 + finalData.length * 2);
+  const view   = new DataView(wavBuf);
+  const write  = (offset, str) => { for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i)); };
+  write(0, 'RIFF');
+  view.setUint32(4,  36 + finalData.length * 2, true);
+  write(8, 'WAVE'); write(12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1,  true); // PCM
+  view.setUint16(22, 1,  true); // モノラル
+  view.setUint32(24, TARGET_SR, true);
+  view.setUint32(28, TARGET_SR * 2, true);
+  view.setUint16(32, 2,  true);
+  view.setUint16(34, 16, true);
+  write(36, 'data');
+  view.setUint32(40, finalData.length * 2, true);
+  const samples = new Int16Array(wavBuf, 44);
+  for (let i = 0; i < finalData.length; i++) {
+    samples[i] = Math.max(-32768, Math.min(32767, Math.round(finalData[i] * 32767)));
+  }
+  return new Blob([wavBuf], { type: 'audio/wav' });
+}
+
 // ─── Deepgram送信 ────────────────────────────
 async function transcribeWithDeepgram(file) {
   const controller = new AbortController();
@@ -1968,21 +2167,25 @@ async function transcribeWithDeepgram(file) {
   if (name.endsWith('.webm')) contentType = 'audio/webm';
   if (name.endsWith('.mp4'))  contentType = 'audio/mp4';
 
-  // ② 単語マスタをDeepgramのkeywordsパラメータに渡す
+  // ② 単語マスタをDeepgramのkeytermパラメータに渡す（設定でオンの場合）
   const wordList = getWordMaster().split('\n').map(s=>s.trim()).filter(Boolean);
-  const keywordsParam = wordList.map(w => `keywords=${encodeURIComponent(w)}:1`).join('&');
+  const keytermParam = getDeepgramSendKeyterm() && wordList.length > 0
+    ? wordList.map(w => `keyterm=${encodeURIComponent(w)}`).join('&')
+    : '';
 
-  // ① 話者識別（設定でオンの場合のみ）+ キーターム
-  const params = [
-    'model=nova-3',
-    'language=ja',
-    'smart_format=false',
+  // ① パラメータ構築
+  const dgModel = getDeepgramModel();
+  const dgLang  = getDeepgramLanguage();
+  const paramParts = [
+    `model=${dgModel}`,
+    dgLang === 'multi' ? 'detect_language=true' : `language=${dgLang}`,
+    getDeepgramSmartFormat() ? 'smart_format=true' : 'smart_format=false',
     getDiarize() ? 'diarize=true' : '',
-    keywordsParam,
+    keytermParam,
   ].filter(Boolean).join('&');
 
   try {
-    const res = await fetch(`https://api.deepgram.com/v1/listen?${params}`, {
+    const res = await fetch(`https://api.deepgram.com/v1/listen?${paramParts}`, {
       method: 'POST',
       headers: {
         'Authorization': 'Token ' + getDeepgramKey(),
@@ -2186,13 +2389,32 @@ document.getElementById('startBtn').addEventListener('click', async () => {
       transcriptText = await transcribeBlob(state.file, state.file.name);
       clearActiveTimer();
 
-    } else if (fallback === 'deepgram') {
-      if (!getDeepgramKey()) throw new Error('Deepgram APIキーが設定されていません。');
-      setProgress(0, '🎙 音声を解析中... [Deepgram]', '', 1, 2);
-      const estSec = Math.max(30, sizeMB * getDeepgramCoeff());
-      activeTimer  = startFakeUploadProgress(0, 100, estSec, pct => `🎙 音声を解析中... ${pct}% [Deepgram]`);
-      transcriptText = await transcribeWithDeepgram(state.file);
-      clearActiveTimer(); usedDeepgram = true;
+    } else if (fallback === 'convert' || fallback === 'deepgram') {
+      // 16kHz変換してGroqで試みる（convert選択時 or deepgram選択時も試みる）
+      let converted16k = null;
+      try {
+        setProgress(0, '🔄 16kHz変換中...', '', 1, 2);
+        converted16k = await convertTo16kWav(state.file);
+        const convertedMB = converted16k.size / 1024 / 1024;
+        if (convertedMB <= CHUNK_MAX_MB) {
+          setProgress(0, '🎙 音声を解析中... [Groq 16kHz]', '', 1, 2);
+          const estSec = Math.max(20, convertedMB * getGroqCoeff());
+          activeTimer = startFakeUploadProgress(0, 100, estSec, pct => `🎙 音声を解析中... ${pct}% [Groq 16kHz]`);
+          transcriptText = await transcribeBlob(converted16k, 'converted_16k.wav');
+          clearActiveTimer();
+        } else {
+          throw new Error('変換後もサイズ超過');
+        }
+      } catch(convErr) {
+        // 変換失敗またはまだ25MB超→Deepgramにフォールバック
+        clearActiveTimer();
+        if (!getDeepgramKey()) throw new Error('Deepgram APIキーが設定されていません。');
+        setProgress(0, '🎙 音声を解析中... [Deepgram]', '', 1, 2);
+        const estSec = Math.max(30, sizeMB * getDeepgramCoeff());
+        activeTimer = startFakeUploadProgress(0, 100, estSec, pct => `🎙 音声を解析中... ${pct}% [Deepgram]`);
+        transcriptText = await transcribeWithDeepgram(state.file);
+        clearActiveTimer(); usedDeepgram = true;
+      }
 
     } else if (fallback === 'split') {
       setProgress(5, '✂️ 音声を分割中...', '', 1, 3);
@@ -2577,7 +2799,7 @@ try {
       document.getElementById('helpOverlay').classList.remove('open');
   });
 } catch(e) {
-  alert('初期化エラー: ' + e.message + '\n' + (e.stack||'').split('\n').slice(0,3).join('\n'));
+  console.error('初期化エラー:', e);
 }
 </script>
 </body>
