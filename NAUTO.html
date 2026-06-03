@@ -242,7 +242,7 @@
     <div class="header-catch">Less Writing.<br>More Talking.</div>
   </div>
   <div class="header-right">
-    <div class="header-version">v2.4.8</div>
+    <div class="header-version">v2.4.9</div>
     <div style="display:flex;gap:8px;">
       <div class="settings-btn" id="historyHeaderBtn" style="font-size:16px;">📚</div>
       <div class="settings-btn" id="helpBtn" style="font-size:15px;font-weight:700;">?</div>
@@ -1213,6 +1213,9 @@ document.getElementById('exportAllBtn').addEventListener('click', () => {
     deepgram_language:    getDeepgramLanguage(),
     deepgram_smart_format:getDeepgramSmartFormat() ? 'true' : 'false',
     deepgram_send_keyterm:getDeepgramSendKeyterm() ? 'true' : 'false',
+    diarize:              getDiarize() ? 'true' : 'false',
+    // データ
+    templates:     getTemplates(),
     master_data:   LS.get('master_data'),
     word_master:   getWordMaster(),
   };
@@ -1260,10 +1263,26 @@ document.getElementById('importAllFile').addEventListener('change', e => {
       document.getElementById('settingMyName').value    = getMyName();
       document.getElementById('settingMyCompany').value = getMyCompany();
       document.getElementById('groqKey').value          = getGroqKey();
-      document.getElementById('deepgramKey').value    = getDeepgramKey();
-      document.getElementById('anthropicKey').value   = getAnthropicKey();
-      document.getElementById('settingMailTo').value  = getMailTo();
-      document.getElementById('wordMaster').value     = getWordMaster();
+      document.getElementById('deepgramKey').value      = getDeepgramKey();
+      document.getElementById('anthropicKey').value     = getAnthropicKey();
+      document.getElementById('settingMailTo').value    = getMailTo();
+      document.getElementById('wordMaster').value       = getWordMaster();
+      // 詳細設定
+      document.getElementById('groqCoeff').value            = getGroqCoeff();
+      document.getElementById('deepgramCoeff').value         = getDeepgramCoeff();
+      document.getElementById('claudeCoeff').value           = getClaudeCoeff();
+      document.getElementById('maxTokens').value             = getMaxTokens();
+      document.getElementById('claudeSystemPrompt').value    = getClaudeSystemPrompt();
+      document.getElementById('groqModel').value             = getGroqModel();
+      document.getElementById('groqLanguage').value          = getGroqLanguage();
+      document.getElementById('groqTemperature').value       = getGroqTemperature();
+      document.getElementById('groqTemperatureVal').textContent = getGroqTemperature();
+      document.getElementById('groqSendWordMaster').checked  = getGroqSendWordMaster();
+      document.getElementById('deepgramModel').value         = getDeepgramModel();
+      document.getElementById('deepgramLanguage').value      = getDeepgramLanguage();
+      document.getElementById('deepgramSmartFormat').checked = getDeepgramSmartFormat();
+      document.getElementById('deepgramSendKeyterm').checked = getDeepgramSendKeyterm();
+      document.getElementById('diarizeEnabled').checked      = getDiarize();
       const svc = getSttService();
       document.querySelector(`input[name="sttService"][value="${svc}"]`).checked = true;
       const fb  = getGroqFallback();
