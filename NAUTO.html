@@ -242,7 +242,7 @@
     <div class="header-catch">Less Writing.<br>More Talking.</div>
   </div>
   <div class="header-right">
-    <div class="header-version">v2.4.9</div>
+    <div class="header-version">v2.5.0d</div>
     <div style="display:flex;gap:8px;">
       <div class="settings-btn" id="historyHeaderBtn" style="font-size:16px;">📚</div>
       <div class="settings-btn" id="helpBtn" style="font-size:15px;font-weight:700;">?</div>
@@ -2116,61 +2116,58 @@ function audioBufferToWavBlob(buffer) {
   return new Blob([arrayBuf], { type: 'audio/wav' });
 }
 
-// ─── 16kHz WAV変換 ───────────────────────────
-async function convertTo16kWav(file) {
-  const TARGET_SR = 16000;
-  const arrayBuf  = await file.arrayBuffer();
-  const audioCtx  = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: TARGET_SR });
-  const decoded   = await audioCtx.decodeAudioData(arrayBuf);
+// ─── 16kHz AAC変換（MediaRecorder） ─────────────
+async function convertTo16kAAC(file) {
+  const TARGET_SR  = 16000;
+  const arrayBuf   = await file.arrayBuffer();
+  const decodeCtx  = new (window.AudioContext || window.webkitAudioContext)();
+  const decoded    = await decodeCtx.decodeAudioData(arrayBuf);
+  await decodeCtx.close();
 
-  // モノラルにミックスダウン
-  const monoLen   = decoded.length;
-  const monoData  = new Float32Array(monoLen);
-  for (let ch = 0; ch < decoded.numberOfChannels; ch++) {
-    const chData = decoded.getChannelData(ch);
-    for (let i = 0; i < monoLen; i++) {
-      monoData[i] += chData[i] / decoded.numberOfChannels;
-    }
-  }
-  await audioCtx.close();
+  // OfflineAudioContextで16kHz・モノラルにリサンプリング
+  const duration   = decoded.duration;
+  const offlineCtx = new OfflineAudioContext(1, Math.ceil(duration * TARGET_SR), TARGET_SR);
+  const src        = offlineCtx.createBufferSource();
+  src.buffer       = decoded;
+  src.connect(offlineCtx.destination);
+  src.start(0);
+  const resampled  = await offlineCtx.startRendering();
 
-  // リサンプリング（元のSRが16kHzでない場合）
-  let finalData = monoData;
-  if (decoded.sampleRate !== TARGET_SR) {
-    const ratio  = decoded.sampleRate / TARGET_SR;
-    const newLen = Math.round(monoLen / ratio);
-    const resampled = new Float32Array(newLen);
-    for (let i = 0; i < newLen; i++) {
-      const src = i * ratio;
-      const lo  = Math.floor(src);
-      const hi  = Math.min(lo + 1, monoLen - 1);
-      const frac = src - lo;
-      resampled[i] = monoData[lo] * (1 - frac) + monoData[hi] * frac;
-    }
-    finalData = resampled;
-  }
+  // MediaRecorderでAAC/MP4エンコード
+  const streamCtx  = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: TARGET_SR });
+  const buffer     = streamCtx.createBuffer(1, resampled.length, TARGET_SR);
+  buffer.copyToChannel(resampled.getChannelData(0), 0);
+  const src2       = streamCtx.createBufferSource();
+  src2.buffer      = buffer;
+  const dest       = streamCtx.createMediaStreamDestination();
+  src2.connect(dest);
 
-  // WAVバイナリ生成
-  const wavBuf = new ArrayBuffer(44 + finalData.length * 2);
-  const view   = new DataView(wavBuf);
-  const write  = (offset, str) => { for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i)); };
-  write(0, 'RIFF');
-  view.setUint32(4,  36 + finalData.length * 2, true);
-  write(8, 'WAVE'); write(12, 'fmt ');
-  view.setUint32(16, 16, true);
-  view.setUint16(20, 1,  true); // PCM
-  view.setUint16(22, 1,  true); // モノラル
-  view.setUint32(24, TARGET_SR, true);
-  view.setUint32(28, TARGET_SR * 2, true);
-  view.setUint16(32, 2,  true);
-  view.setUint16(34, 16, true);
-  write(36, 'data');
-  view.setUint32(40, finalData.length * 2, true);
-  const samples = new Int16Array(wavBuf, 44);
-  for (let i = 0; i < finalData.length; i++) {
-    samples[i] = Math.max(-32768, Math.min(32767, Math.round(finalData[i] * 32767)));
-  }
-  return new Blob([wavBuf], { type: 'audio/wav' });
+  // iPhoneはaudio/mp4（AAC）に対応
+  const mimeType   = MediaRecorder.isTypeSupported('audio/mp4')            ? 'audio/mp4'
+                   : MediaRecorder.isTypeSupported('audio/aac')            ? 'audio/aac'
+                   : MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus'
+                   : 'audio/webm';
+
+  return new Promise((resolve, reject) => {
+    const chunks    = [];
+    const recorder  = new MediaRecorder(dest.stream, {
+      mimeType,
+      audioBitsPerSecond: 32000, // 32kbps
+    });
+    recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+    recorder.onstop = () => {
+      streamCtx.close();
+      const blob = new Blob(chunks, { type: mimeType });
+      resolve(blob);
+    };
+    recorder.onerror = e => { streamCtx.close(); reject(e.error); };
+    src2.start(0);
+    recorder.start();
+    // 音声の長さ分録音後に停止
+    setTimeout(() => {
+      try { recorder.stop(); src2.stop(); } catch(e) {}
+    }, duration * 1000 + 500);
+  });
 }
 
 // ─── Deepgram送信 ────────────────────────────
@@ -2412,9 +2409,10 @@ document.getElementById('startBtn').addEventListener('click', async () => {
       // 16kHz変換してGroqで試みる（convert選択時 or deepgram選択時も試みる）
       let converted16k = null;
       try {
-        setProgress(0, '🔄 16kHz変換中...', '', 1, 2);
-        converted16k = await convertTo16kWav(state.file);
+        setProgress(0, '🔄 16kHz AAC変換中...', '', 1, 2);
+        converted16k = await convertTo16kAAC(state.file);
         const convertedMB = converted16k.size / 1024 / 1024;
+        showToast(`AAC変換後：${convertedMB.toFixed(1)}MB`);
         if (convertedMB <= CHUNK_MAX_MB) {
           setProgress(0, '🎙 音声を解析中... [Groq 16kHz]', '', 1, 2);
           const estSec = Math.max(20, convertedMB * getGroqCoeff());
