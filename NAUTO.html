@@ -242,7 +242,7 @@
     <div class="header-catch">Less Writing.<br>More Talking.</div>
   </div>
   <div class="header-right">
-    <div class="header-version">v2.5.0</div>
+    <div class="header-version">v2.5.1</div>
     <div style="display:flex;gap:8px;">
       <div class="settings-btn" id="historyHeaderBtn" style="font-size:16px;">📚</div>
       <div class="settings-btn" id="helpBtn" style="font-size:15px;font-weight:700;">?</div>
@@ -1851,59 +1851,59 @@ function clearError(id) {
 
 // ─── モーダル ────────────────────────────────
 function openModal() {
-  document.getElementById('settingMyName').value    = getMyName();
-  document.getElementById('settingMyCompany').value = getMyCompany();
-  document.getElementById('groqKey').value         = getGroqKey();
-  document.getElementById('deepgramKey').value     = getDeepgramKey();
-  document.getElementById('anthropicKey').value    = getAnthropicKey();
-  document.getElementById('settingMailTo').value   = getMailTo();
-  document.getElementById('wordMaster').value          = getWordMaster();
-  document.getElementById('groqCoeff').value           = getGroqCoeff();
-  document.getElementById('deepgramCoeff').value       = getDeepgramCoeff();
-  document.getElementById('claudeCoeff').value         = getClaudeCoeff();
-  document.getElementById('maxTokens').value           = getMaxTokens();
-  document.getElementById('claudeSystemPrompt').value  = getClaudeSystemPrompt();
-  document.getElementById('groqModel').value           = getGroqModel();
-  document.getElementById('groqLanguage').value        = getGroqLanguage();
-  document.getElementById('groqTemperature').value     = getGroqTemperature();
-  document.getElementById('groqTemperatureVal').textContent = getGroqTemperature();
-  renderWordMasterDisplay();
-  document.getElementById('groqSendWordMaster').checked    = getGroqSendWordMaster();
-  // 参加者マスターはdetails展開時に描画
-  const masterDetails = document.getElementById('masterDetails');
-  if (masterDetails) {
-    masterDetails.addEventListener('toggle', () => {
-      if (masterDetails.open) renderMasterList();
-    }, { once: false });
-    if (masterDetails.open) renderMasterList();
+  try {
+    document.getElementById('settingMyName').value    = getMyName();
+    document.getElementById('settingMyCompany').value = getMyCompany();
+    document.getElementById('groqKey').value          = getGroqKey();
+    document.getElementById('deepgramKey').value      = getDeepgramKey();
+    document.getElementById('anthropicKey').value     = getAnthropicKey();
+    document.getElementById('settingMailTo').value    = getMailTo();
+    document.getElementById('wordMaster').value           = getWordMaster();
+    document.getElementById('groqCoeff').value            = getGroqCoeff();
+    document.getElementById('deepgramCoeff').value        = getDeepgramCoeff();
+    document.getElementById('claudeCoeff').value          = getClaudeCoeff();
+    document.getElementById('maxTokens').value            = getMaxTokens();
+    document.getElementById('claudeSystemPrompt').value   = getClaudeSystemPrompt();
+    document.getElementById('groqModel').value            = getGroqModel();
+    document.getElementById('groqLanguage').value         = getGroqLanguage();
+    document.getElementById('groqTemperature').value      = getGroqTemperature();
+    document.getElementById('groqTemperatureVal').textContent = getGroqTemperature();
+    renderWordMasterDisplay();
+    document.getElementById('groqSendWordMaster').checked = getGroqSendWordMaster();
+
+    // サービス選択を復元
+    const svc = getSttService();
+    const svcRadio = document.querySelector(`input[name="sttService"][value="${svc}"]`);
+    if (svcRadio) svcRadio.checked = true;
+    const fb = getGroqFallback();
+    const fbRadio = document.querySelector(`input[name="groqFallback"][value="${fb}"]`);
+    if (fbRadio) fbRadio.checked = true;
+    document.getElementById('diarizeEnabled').checked      = getDiarize();
+    document.getElementById('deepgramModel').value         = getDeepgramModel();
+    document.getElementById('deepgramLanguage').value      = getDeepgramLanguage();
+    document.getElementById('deepgramSmartFormat').checked = getDeepgramSmartFormat();
+    document.getElementById('deepgramSendKeyterm').checked = getDeepgramSendKeyterm();
+    updateGroqFallbackVisibility();
+
+    renderTemplateList();
+    resetEditor();
+
+    // Temperatureスライダーのリアルタイム表示（oninputで上書き、重複登録なし）
+    const tempSlider = document.getElementById('groqTemperature');
+    const tempVal    = document.getElementById('groqTemperatureVal');
+    if (tempSlider) tempSlider.oninput = () => tempVal.textContent = tempSlider.value;
+
+    // 係数プレビューのイベント登録（oninputで上書き、重複登録なし）
+    ['groqCoeff','deepgramCoeff','claudeCoeff'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.oninput = updateCoeffPreview;
+    });
+    updateCoeffPreview();
+
+    document.getElementById('modalOverlay').classList.add('open');
+  } catch(e) {
+    console.error('openModal error:', e);
   }
-
-  // サービス選択を復元
-  const svc = getSttService();
-  document.querySelector(`input[name="sttService"][value="${svc}"]`).checked = true;
-  const fb  = getGroqFallback();
-  document.querySelector(`input[name="groqFallback"][value="${fb}"]`).checked = true;
-  document.getElementById('diarizeEnabled').checked       = getDiarize();
-  document.getElementById('deepgramModel').value          = getDeepgramModel();
-  document.getElementById('deepgramLanguage').value       = getDeepgramLanguage();
-  document.getElementById('deepgramSmartFormat').checked  = getDeepgramSmartFormat();
-  document.getElementById('deepgramSendKeyterm').checked  = getDeepgramSendKeyterm();
-  updateGroqFallbackVisibility();
-
-  renderTemplateList();
-  resetEditor();
-  document.getElementById('modalOverlay').classList.add('open');
-  // Temperatureスライダーのリアルタイム表示
-  const tempSlider = document.getElementById('groqTemperature');
-  const tempVal    = document.getElementById('groqTemperatureVal');
-  if (tempSlider) tempSlider.oninput = () => tempVal.textContent = tempSlider.value;
-
-  // 係数プレビューのイベント登録
-  ['groqCoeff','deepgramCoeff','claudeCoeff'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.addEventListener('input', updateCoeffPreview);
-  });
-  updateCoeffPreview();
 }
 function closeModal(){document.getElementById('modalOverlay').classList.remove('open');}
 // Groq選択時のみフォールバック選択を表示
@@ -2685,14 +2685,6 @@ document.getElementById('resetBtn').addEventListener('click',()=>{
 });
 
 // ─── 初期化 ──────────────────────────────────
-initTemplates();
-setupDateTime();
-updateMemberSelf();
-updateApiStatus();
-updateStartBtn();
-updateTemplateSelect();
-
-// ─── 初期化 ──────────────────────────────────
 try {
   initTemplates();
   setupDateTime();
@@ -2704,6 +2696,14 @@ try {
   document.getElementById('addCustomerBtn').addEventListener('click', () => showPicker('customer'));
   document.getElementById('addCompanionBtn').addEventListener('click', () => showPicker('companion'));
   document.getElementById('addColleagueBtn').addEventListener('click', () => showColleaguePicker());
+
+  // 参加者マスターはdetails展開時に描画（1回だけ登録）
+  const masterDetails = document.getElementById('masterDetails');
+  if (masterDetails) {
+    masterDetails.addEventListener('toggle', () => {
+      if (masterDetails.open) renderMasterList();
+    });
+  }
 
   document.getElementById('historyHeaderBtn').addEventListener('click', openHistory);
   document.getElementById('historyBtn').addEventListener('click', openHistory);
