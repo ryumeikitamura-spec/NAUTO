@@ -242,7 +242,7 @@
     <div class="header-catch">Less Writing.<br>More Talking.</div>
   </div>
   <div class="header-right">
-    <div class="header-version">v2.5.1</div>
+    <div class="header-version">v2.7.3</div>
     <div style="display:flex;gap:8px;">
       <div class="settings-btn" id="historyHeaderBtn" style="font-size:16px;">📚</div>
       <div class="settings-btn" id="helpBtn" style="font-size:15px;font-weight:700;">?</div>
@@ -323,7 +323,38 @@
     <div class="section-card">
       <div class="section-card-title">📋 議事録テンプレート</div>
     <select class="styled" id="templateSelect"></select>
+    </div>
 
+    <!-- 共通単語マスタ -->
+    <div class="section-card" id="commonWordSetCard">
+      <div class="section-card-header">
+        <div class="section-card-title">📖 共通単語マスタ</div>
+        <div id="commonWordSetInfo" style="font-size:11px;color:var(--text-muted);"></div>
+      </div>
+      <select class="styled" id="commonWordSetSelect"></select>
+    </div>
+
+    <!-- 商談単語マスタ -->
+    <div class="section-card" id="keywordSetCard" style="display:none;">
+      <div class="section-card-header">
+        <div class="section-card-title">🔑 商談単語マスタ</div>
+        <div id="keywordSetTokenInfo" style="font-size:11px;color:var(--text-muted);"></div>
+      </div>
+      <select class="styled" id="keywordSetSelect"></select>
+    </div>
+
+    <!-- 打合せ資料 -->
+    <div class="section-card">
+      <div class="section-card-header">
+        <div class="section-card-title">📄 打合せ資料（任意）</div>
+        <div id="refFilesTotalInfo" style="font-size:11px;color:var(--text-muted);"></div>
+      </div>
+      <div id="refFileList" style="display:flex;flex-direction:column;gap:6px;"></div>
+      <label id="refFileAddBtn" style="display:inline-flex;align-items:center;gap:6px;padding:9px 16px;background:var(--surface2);border:1.5px dashed var(--border);border-radius:12px;cursor:pointer;font-size:13px;color:var(--text-muted);margin-top:4px;">
+        <input type="file" id="refFileInput" accept=".txt,.md,.pdf,.pptx" multiple style="display:none;">
+        ＋ ファイルを追加（txt / pdf / pptx）
+      </label>
+      <div id="refFileError" style="font-size:12px;color:#e53e3e;margin-top:4px;display:none;"></div>
     </div>
 
     <div class="section-card">
@@ -400,6 +431,19 @@
       <button class="btn btn-ghost"     id="resetBtn">🔄 最初から</button>
     </div>
 
+    <!-- 単語登録エリア -->
+    <div id="keywordRegisterArea" style="display:none;background:var(--surface2);border:1.5px solid var(--accent2);border-radius:var(--radius);padding:14px 16px;display:none;flex-direction:column;gap:10px;">
+      <div style="font-size:13px;font-weight:700;color:var(--accent2);">🔑 単語をキーワードセットに登録</div>
+      <div style="font-size:12px;color:var(--text-muted);">登録した単語は次回からDeepgramに優先送信されます（初回スコア +3）</div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input type="text" id="keywordRegisterInput" placeholder="正しい単語を入力" style="flex:1;padding:10px 14px;font-size:14px;border:1.5px solid var(--border);border-radius:10px;outline:none;font-family:inherit;background:var(--surface);color:var(--text);">
+        <button class="btn btn-primary btn-sm" id="keywordRegisterBtn" style="flex-shrink:0;padding:10px 16px;">登録</button>
+      </div>
+      <div id="keywordRegisterSetInfo" style="font-size:12px;color:var(--text-muted);"></div>
+      <button class="btn btn-secondary btn-sm" id="keywordFixMinutesBtn" style="display:none;">🤖 Claudeで議事録を修正</button>
+    </div>
+    <button class="btn btn-secondary" id="keywordRegisterToggleBtn" style="font-size:13px;padding:11px;">🔑 単語を登録する</button>
+
     <div class="divider"></div>
 
     <!-- Claude往復チャット -->
@@ -417,6 +461,37 @@
     </details>
   </div>
 
+</div>
+
+<!-- 共通単語マスタ詳細モーダル -->
+<div class="modal-overlay" id="commonWordSetDetailOverlay" style="z-index:250;">
+  <div class="modal">
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div class="modal-title" id="commonWordSetDetailTitle" style="font-size:15px;"></div>
+      <div id="commonWordSetDetailCount" style="font-size:12px;color:var(--text-muted);"></div>
+    </div>
+    <div id="commonWordSetDetailWordList" style="display:flex;flex-direction:column;gap:6px;max-height:50dvh;overflow-y:auto;"></div>
+    <div style="display:flex;gap:8px;align-items:center;margin-top:4px;">
+      <input type="text" id="commonWordSetDetailInput" placeholder="例：豊臣秀吉、関ヶ原、征夷大将軍" style="flex:1;padding:10px 14px;font-size:14px;border:1.5px solid var(--border);border-radius:10px;outline:none;font-family:inherit;background:var(--surface);color:var(--text);">
+      <button class="btn btn-primary btn-sm" id="commonWordSetDetailAddBtn" style="flex-shrink:0;padding:10px 14px;">追加</button>
+    </div>
+    <div style="font-size:11px;color:var(--text-muted);">複数単語はカンマ区切りで一括入力できます</div>
+    <button class="btn btn-ghost" id="closeCommonWordSetDetail">閉じる</button>
+  </div>
+</div>
+
+<!-- キーワードセット詳細モーダル -->
+<div class="modal-overlay" id="keywordSetDetailOverlay" style="z-index:250;">
+  <div class="modal">
+    <div class="modal-title" id="keywordSetDetailTitle" style="font-size:15px;"></div>
+    <div style="font-size:12px;color:var(--text-muted);" id="keywordSetDetailTokenInfo"></div>
+    <div id="keywordSetWordList" style="display:flex;flex-direction:column;gap:6px;max-height:50dvh;overflow-y:auto;"></div>
+    <div style="display:flex;gap:8px;align-items:center;margin-top:4px;">
+      <input type="text" id="keywordSetAddWordInput" placeholder="例：豊臣秀吉、関ヶ原、征夷大将軍" style="flex:1;padding:10px 14px;font-size:14px;border:1.5px solid var(--border);border-radius:10px;outline:none;font-family:inherit;background:var(--surface);color:var(--text);">
+      <button class="btn btn-primary btn-sm" id="keywordSetAddWordBtn" style="flex-shrink:0;padding:10px 14px;">追加</button>
+    </div>
+    <button class="btn btn-ghost" id="closeKeywordSetDetail">閉じる</button>
+  </div>
 </div>
 
 <!-- 履歴モーダル -->
@@ -611,13 +686,37 @@
 
     <div class="modal-divider"></div>
 
-    <!-- ③ 単語マスタ -->
-    <details class="modal-details" id="wordMasterDetails">
-      <summary><span>📖 単語マスタ</span></summary>
-      <div style="font-size:12px;color:var(--text-muted);margin:8px 0 6px;">専門用語・製品名・固有名詞を登録。議事録生成時にClaudeへ自動的に渡されます。</div>
-      <div id="wordMasterDisplay" style="margin-top:8px;background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;padding:12px;max-height:200px;overflow-y:auto;display:flex;flex-wrap:wrap;gap:6px;"></div>
-      <textarea id="wordMaster" rows="6" style="resize:vertical;min-height:120px;margin-top:8px;" placeholder="例：関ヶ原&#10;大阪の陣&#10;征夷大将軍&#10;本能寺&#10;天下統一&#10;江戸幕府"></textarea>
-      <div style="font-size:11px;color:var(--text-muted);">1行1単語で入力。「保存する」ボタンで保存されます。</div>
+    <!-- ③ 共通単語マスタ -->
+    <details class="modal-details" id="commonWordSetDetails">
+      <summary><span>📖 共通単語マスタ</span></summary>
+      <div style="font-size:12px;color:var(--text-muted);margin:8px 0 6px;">商談の種類・目的別に単語セットを作成。Groq・Deepgram・Claude全てに渡されます。</div>
+      <div id="commonWordSetList" style="display:flex;flex-direction:column;gap:8px;"></div>
+      <button class="btn btn-secondary btn-sm" id="showCommonWordSetAddBtn" style="margin-top:8px;">＋ セットを追加</button>
+      <div id="commonWordSetAddArea" style="display:none;margin-top:8px;flex-direction:column;gap:6px;">
+        <input type="text" id="commonWordSetNewName" placeholder="例：本能寺の変対策用" style="padding:8px 12px;font-size:13px;border:1.5px solid var(--border);border-radius:10px;outline:none;font-family:inherit;background:var(--surface);color:var(--text);">
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-primary btn-sm" onclick="confirmAddCommonWordSet()" style="flex:1;">追加</button>
+          <button class="btn btn-secondary btn-sm" onclick="cancelAddCommonWordSet()" style="flex:none;width:70px;">取消</button>
+        </div>
+      </div>
+    </details>
+
+    <div class="modal-divider"></div>
+
+    <!-- ④ 商談単語マスタ -->
+    <details class="modal-details" id="keywordSetDetails">
+      <summary><span>🔑 商談単語マスタ</span></summary>
+      <div style="font-size:12px;color:var(--text-muted);margin:8px 0 6px;">会社ごとに単語セットを作成。Deepgram・Groqにスコア上位から500トークン以内で送信します。</div>
+      <div id="keywordSetList" style="display:flex;flex-direction:column;gap:10px;"></div>
+      <button class="btn btn-secondary btn-sm" id="showKeywordCompanySelectBtn" style="margin-top:8px;">＋ 会社を選んでセット追加</button>
+      <div id="keywordCompanySelectArea" style="display:none;margin-top:8px;flex-direction:column;gap:6px;">
+        <select class="styled" id="keywordCompanySelect" style="font-size:13px;padding:8px 12px;"></select>
+        <input type="text" id="keywordNewSetName" placeholder="例：関ヶ原攻略用" style="padding:8px 12px;font-size:13px;border:1.5px solid var(--border);border-radius:10px;outline:none;font-family:inherit;background:var(--surface);color:var(--text);">
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-primary btn-sm" onclick="confirmAddKeywordSet()" style="flex:1;">追加</button>
+          <button class="btn btn-secondary btn-sm" onclick="cancelAddKeywordSet()" style="flex:none;width:70px;">取消</button>
+        </div>
+      </div>
     </details>
 
     <div class="modal-divider"></div>
@@ -784,8 +883,16 @@
         <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 14px;background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;">
           <input type="checkbox" id="groqSendWordMaster" style="width:18px;height:18px;cursor:pointer;">
           <div>
-            <div style="font-size:14px;font-weight:600;color:var(--text);">単語マスタをGroqに送る</div>
-            <div style="font-size:12px;color:var(--text-muted);">専門用語をpromptパラメータとして渡し認識精度を向上</div>
+            <div style="font-size:14px;font-weight:600;color:var(--text);">共通単語マスタをGroqに送る</div>
+            <div style="font-size:12px;color:var(--text-muted);">選択中セットの単語をpromptパラメータとして渡し認識精度を向上</div>
+          </div>
+        </label>
+
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 14px;background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;">
+          <input type="checkbox" id="groqUseKeywordSet" style="width:18px;height:18px;cursor:pointer;" checked>
+          <div>
+            <div style="font-size:14px;font-weight:600;color:var(--text);">商談単語マスタをGroqに送る</div>
+            <div style="font-size:12px;color:var(--text-muted);">お客様に紐づくセットを優先してpromptに送信（オフ時は共通単語マスタのみ）</div>
           </div>
         </label>
 
@@ -838,11 +945,32 @@
         <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 14px;background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;">
           <input type="checkbox" id="deepgramSendKeyterm" style="width:18px;height:18px;cursor:pointer;" checked>
           <div>
-            <div style="font-size:14px;font-weight:600;color:var(--text);">単語マスタをKeytermとして送る</div>
-            <div style="font-size:12px;color:var(--text-muted);">専門用語・固有名詞の認識精度を向上</div>
+            <div style="font-size:14px;font-weight:600;color:var(--text);">共通単語マスタをKeytermとして送る</div>
+            <div style="font-size:12px;color:var(--text-muted);">選択中セットの単語をkeytermとして送り認識精度を向上</div>
           </div>
         </label>
 
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 14px;background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;">
+          <input type="checkbox" id="useKeywordSet" style="width:18px;height:18px;cursor:pointer;" checked>
+          <div>
+            <div style="font-size:14px;font-weight:600;color:var(--text);">キーワードセットを使用する</div>
+            <div style="font-size:12px;color:var(--text-muted);">お客様に紐づくセットを優先してDeepgramに送信（オフ時は単語マスタのみ）</div>
+          </div>
+        </label>
+
+        <div class="modal-divider" style="margin:8px 0;"></div>
+        <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;">📄 打合せ資料</div>
+        <div class="input-group">
+          <div class="label">合計ファイルサイズ上限</div>
+          <select class="styled" id="refFileSizeLimit" style="font-size:13px;padding:8px 12px;">
+            <option value="102400">100KB</option>
+            <option value="512000" selected>500KB（デフォルト）</option>
+            <option value="1048576">1MB</option>
+            <option value="2097152">2MB</option>
+            <option value="5242880">5MB</option>
+          </select>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">上限を超えるファイルは追加できません。大きいほどClaudeのAPI料金が増加します。</div>
+        </div>
       </div>
     </details>
 
@@ -994,6 +1122,8 @@ const getDeepgramModel      = () => LS.get('deepgram_model')       || 'nova-3';
 const getDeepgramLanguage   = () => LS.get('deepgram_language')    || 'ja';
 const getDeepgramSmartFormat= () => LS.get('deepgram_smart_format') === 'true';
 const getDeepgramSendKeyterm= () => LS.get('deepgram_send_keyterm') !== 'false';
+const getUseKeywordSet      = () => LS.get('use_keyword_set') !== 'false'; // デフォルトtrue
+const getRefFileSizeLimit   = () => parseInt(LS.get('ref_file_size_limit') || '512000');
 const getGroqFallback  = () => LS.get('groq_fallback') || 'deepgram';
 // 詳細設定
 const getGroqCoeff          = () => parseFloat(LS.get('groq_coeff'))      || 3;
@@ -1004,7 +1134,340 @@ const getClaudeSystemPrompt = () => LS.get('claude_system_prompt') || '';
 const getGroqModel          = () => LS.get('groq_model')    || 'whisper-large-v3';
 const getGroqLanguage       = () => LS.get('groq_language') ?? 'ja';
 const getGroqTemperature    = () => parseFloat(LS.get('groq_temperature')) || 0;
-const getGroqSendWordMaster = () => LS.get('groq_send_word_master') !== 'false'; // デフォルトtrue
+const getGroqSendWordMaster  = () => LS.get('groq_send_word_master')  !== 'false'; // デフォルトtrue
+const getGroqUseKeywordSet   = () => LS.get('groq_use_keyword_set')  !== 'false'; // デフォルトtrue
+
+// ─── キーワードセット管理 ──────────────────────
+const KS_KEY = 'keyword_sets';
+
+// トークン推定（日本語1.5・英数字0.25・その他0.5）
+function estimateTokens(word) {
+  let t = 0;
+  for (const c of word) {
+    if (/[　-鿿豈-﫿゠-ヿ぀-ゟ]/.test(c)) t += 1.5;
+    else if (/[a-zA-Z0-9]/.test(c)) t += 0.25;
+    else t += 0.5;
+  }
+  return Math.ceil(t);
+}
+
+function getKeywordSets() {
+  try { return JSON.parse(LS.get(KS_KEY) || '[]'); } catch(e) { return []; }
+}
+function saveKeywordSets(data) { LS.set(KS_KEY, JSON.stringify(data)); }
+
+// 会社のセット一覧取得
+function getSetsForCompany(company) {
+  return getKeywordSets().find(e => e.company === company)?.sets || [];
+}
+
+// トークン500以内でスコア上位の単語リストを返す
+function getKeytermWords(companyName, setId) {
+  const entry = getKeywordSets().find(e => e.company === companyName);
+  if (!entry) return [];
+  const set = entry.sets.find(s => s.id === setId);
+  if (!set) return [];
+  const sorted = [...set.words].sort((a, b) => b.score - a.score);
+  const result = [];
+  let totalTokens = 0;
+  for (const w of sorted) {
+    const t = estimateTokens(w.word);
+    if (totalTokens + t > 500) break;
+    result.push(w.word);
+    totalTokens += t;
+  }
+  return result;
+}
+
+// 単語をセットに追加（score指定）
+function addWordToSet(companyName, setId, word, score) {
+  const data = getKeywordSets();
+  const entry = data.find(e => e.company === companyName);
+  if (!entry) return;
+  const set = entry.sets.find(s => s.id === setId);
+  if (!set) return;
+  const existing = set.words.find(w => w.word === word);
+  if (existing) { existing.score += score; }
+  else { set.words.push({ word, score }); }
+  saveKeywordSets(data);
+}
+
+// 文字起こしテキストに含まれる単語のスコア+1
+function incrementKeytermScores(companyName, setId, transcriptText) {
+  const data = getKeywordSets();
+  const entry = data.find(e => e.company === companyName);
+  if (!entry) return;
+  const set = entry.sets.find(s => s.id === setId);
+  if (!set) return;
+  let updated = false;
+  set.words.forEach(w => {
+    if (transcriptText.includes(w.word)) { w.score += 1; updated = true; }
+  });
+  if (updated) saveKeywordSets(data);
+}
+
+// トークン使用量を表示用に計算
+function calcSetTokenInfo(companyName, setId) {
+  const entry = getKeywordSets().find(e => e.company === companyName);
+  if (!entry) return '';
+  const set = entry.sets.find(s => s.id === setId);
+  if (!set || set.words.length === 0) return '0語 / 0トークン';
+  const sorted = [...set.words].sort((a, b) => b.score - a.score);
+  let totalTokens = 0, sentCount = 0;
+  for (const w of sorted) {
+    const t = estimateTokens(w.word);
+    if (totalTokens + t <= 500) { totalTokens += t; sentCount++; }
+  }
+  return `${sentCount}/${set.words.length}語 · 約${totalTokens}/500トークン`;
+}
+
+// ─── キーワードセット設定画面の描画 ──────────────
+let editingKeywordSetCompany = null;
+let editingKeywordSetId = null; // 詳細モーダル用
+
+function renderKeywordSetList() {
+  const listEl = document.getElementById('keywordSetList');
+  if (!listEl) return;
+  const data = getKeywordSets();
+  listEl.innerHTML = '';
+  if (data.length === 0) {
+    listEl.innerHTML = '<div style="font-size:13px;color:var(--text-muted);">登録なし</div>';
+    return;
+  }
+  data.forEach((entry, cidx) => {
+    const block = document.createElement('div');
+    block.style.cssText = 'background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;padding:10px 14px;';
+    const header = document.createElement('div');
+    header.style.cssText = 'font-size:14px;font-weight:700;color:var(--accent);margin-bottom:6px;';
+    header.textContent = entry.company;
+    block.appendChild(header);
+    entry.sets.forEach((set, sidx) => {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--border);';
+      const nameEl = document.createElement('div');
+      nameEl.style.cssText = 'flex:1;font-size:13px;color:var(--text);';
+      const tokenInfo = calcSetTokenInfo(entry.company, set.id);
+      nameEl.innerHTML = `<span style="font-weight:600;">${set.name}</span><br><span style="font-size:11px;color:var(--text-muted);">${tokenInfo}</span>`;
+      const editBtn = document.createElement('button');
+      editBtn.className = 'btn btn-secondary btn-sm';
+      editBtn.textContent = '編集';
+      editBtn.onclick = () => openKeywordSetDetail(entry.company, set.id);
+      const delBtn = document.createElement('button');
+      delBtn.className = 'btn btn-danger';
+      delBtn.textContent = '削除';
+      delBtn.onclick = () => {
+        if (!confirm(`「${set.name}」を削除しますか？`)) return;
+        const d = getKeywordSets();
+        d[cidx].sets.splice(sidx, 1);
+        if (d[cidx].sets.length === 0) d.splice(cidx, 1);
+        saveKeywordSets(d);
+        renderKeywordSetList();
+        showToast('削除しました');
+      };
+      row.appendChild(nameEl); row.appendChild(editBtn); row.appendChild(delBtn);
+      block.appendChild(row);
+    });
+    listEl.appendChild(block);
+  });
+}
+
+// 会社選択プルダウンを更新
+function updateKeywordCompanySelect() {
+  const sel = document.getElementById('keywordCompanySelect');
+  if (!sel) return;
+  const companies = getAllMasterData().companies || [];
+  sel.innerHTML = '';
+  if (companies.length === 0) {
+    // 会社マスタが空の場合はプレースホルダーを表示
+    const o = document.createElement('option');
+    o.value = ''; o.textContent = '（先に参加者マスタで会社を登録してください）';
+    o.disabled = true; o.selected = true;
+    sel.appendChild(o);
+    return;
+  }
+  companies.forEach(c => {
+    const o = document.createElement('option');
+    o.value = c.company; o.textContent = c.company;
+    sel.appendChild(o);
+  });
+}
+
+function showKeywordCompanySelectArea() {
+  updateKeywordCompanySelect();
+  const area = document.getElementById('keywordCompanySelectArea');
+  const btn  = document.getElementById('showKeywordCompanySelectBtn');
+  if (area) area.style.display = 'flex';
+  if (btn)  btn.style.display  = 'none';
+}
+
+function cancelAddKeywordSet() {
+  const area = document.getElementById('keywordCompanySelectArea');
+  const btn  = document.getElementById('showKeywordCompanySelectBtn');
+  if (area) area.style.display = 'none';
+  if (btn)  btn.style.display  = 'block';
+  const inp = document.getElementById('keywordNewSetName');
+  if (inp) inp.value = '';
+}
+
+function confirmAddKeywordSet() {
+  const sel     = document.getElementById('keywordCompanySelect');
+  const company = sel?.value?.trim();
+  const name    = document.getElementById('keywordNewSetName')?.value?.trim();
+
+  // 会社が未選択・無効な場合
+  if (!company) {
+    showToast('会社を選択してください（参加者マスタで先に登録）');
+    return;
+  }
+  // セット名が空の場合
+  if (!name) {
+    showToast('セット名を入力してください');
+    document.getElementById('keywordNewSetName')?.focus();
+    return;
+  }
+  // 同名セットの重複チェック
+  const data  = getKeywordSets();
+  let entry   = data.find(e => e.company === company);
+  if (entry && entry.sets.some(s => s.name === name)) {
+    showToast(`「${name}」は既に登録されています`);
+    return;
+  }
+  const newSet = { id: 'ks_' + Date.now(), name, words: [] };
+  if (entry) { entry.sets.push(newSet); }
+  else { data.push({ company, sets: [newSet] }); }
+  saveKeywordSets(data);
+  cancelAddKeywordSet();
+  renderKeywordSetList();
+  showToast(`「${company} / ${name}」を追加しました`);
+}
+
+// ─── キーワードセット詳細モーダル ──────────────
+function openKeywordSetDetail(company, setId) {
+  editingKeywordSetCompany = company;
+  editingKeywordSetId = setId;
+  const data  = getKeywordSets();
+  const entry = data.find(e => e.company === company);
+  const set   = entry?.sets.find(s => s.id === setId);
+  if (!set) { showToast('セットが見つかりません'); return; }
+  document.getElementById('keywordSetDetailTitle').textContent = `${company} ／ ${set.name}`;
+  document.getElementById('keywordSetAddWordInput').value = '';
+  renderKeywordSetWordList();
+  // 設定モーダルは閉じずに詳細モーダルを上に重ねて開く
+  document.getElementById('keywordSetDetailOverlay').classList.add('open');
+}
+
+function renderKeywordSetWordList() {
+  const listEl = document.getElementById('keywordSetWordList');
+  if (!listEl) return;
+  const data  = getKeywordSets();
+  const entry = data.find(e => e.company === editingKeywordSetCompany);
+  const set   = entry?.sets.find(s => s.id === editingKeywordSetId);
+  if (!set) return;
+  const sorted = [...set.words].sort((a, b) => b.score - a.score);
+  // トークン計算
+  let totalTokens = 0; const sentWords = new Set();
+  for (const w of sorted) {
+    const t = estimateTokens(w.word);
+    if (totalTokens + t <= 500) { sentWords.add(w.word); totalTokens += t; }
+  }
+  document.getElementById('keywordSetDetailTokenInfo').textContent =
+    `${sentWords.size}/${set.words.length}語 · 約${totalTokens}/500トークン送信予定`;
+  listEl.innerHTML = '';
+  if (sorted.length === 0) {
+    listEl.innerHTML = '<div style="font-size:13px;color:var(--text-muted);padding:8px 0;">登録単語なし</div>';
+    return;
+  }
+  sorted.forEach((w, idx) => {
+    const row = document.createElement('div');
+    const isSent = sentWords.has(w.word);
+    row.style.cssText = `display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;background:${isSent ? 'rgba(44,115,210,0.06)' : 'var(--surface2)'};border:1px solid ${isSent ? 'var(--accent2)' : 'var(--border)'};`;
+    const wordEl = document.createElement('div');
+    wordEl.style.cssText = 'flex:1;font-size:14px;font-weight:500;';
+    wordEl.textContent = w.word;
+    const scoreEl = document.createElement('div');
+    scoreEl.style.cssText = 'font-size:11px;font-family:"DM Mono",monospace;color:var(--text-muted);min-width:50px;text-align:right;';
+    scoreEl.textContent = `score:${w.score}`;
+    const delBtn = document.createElement('button');
+    delBtn.style.cssText = 'color:var(--text-muted);cursor:pointer;font-size:14px;background:none;border:none;padding:2px 4px;';
+    delBtn.textContent = '✕';
+    delBtn.onclick = () => {
+      const d = getKeywordSets();
+      const e = d.find(e => e.company === editingKeywordSetCompany);
+      const s = e?.sets.find(s => s.id === editingKeywordSetId);
+      if (s) { s.words.splice(s.words.findIndex(x => x.word === w.word), 1); }
+      saveKeywordSets(d);
+      renderKeywordSetWordList();
+      renderKeywordSetList();
+    };
+    row.appendChild(wordEl); row.appendChild(scoreEl); row.appendChild(delBtn);
+    listEl.appendChild(row);
+  });
+}
+
+// ─── パネル1：キーワードセット選択の連動 ──────────
+let selectedKeywordSetId = null;
+let selectedKeywordCompany = null;
+
+function updateKeywordSetSelector() {
+  // キーワードセット機能がOFFの場合はカードを非表示
+  if (!getUseKeywordSet()) {
+    document.getElementById('keywordSetCard').style.display = 'none';
+    selectedKeywordSetId = null;
+    selectedKeywordCompany = null;
+    return;
+  }
+  // お客様の1社目の会社名を取得
+  const firstCustomer = members.customer[0];
+  if (!firstCustomer) {
+    document.getElementById('keywordSetCard').style.display = 'none';
+    selectedKeywordSetId = null;
+    selectedKeywordCompany = null;
+    return;
+  }
+  // 「ローツェ 林様」→「ローツェ」
+  const company = firstCustomer.replace(/\s.*$/, '');
+  const sets = getSetsForCompany(company);
+  if (sets.length === 0) {
+    document.getElementById('keywordSetCard').style.display = 'none';
+    selectedKeywordSetId = null;
+    selectedKeywordCompany = null;
+    return;
+  }
+  selectedKeywordCompany = company;
+  const sel = document.getElementById('keywordSetSelect');
+  sel.innerHTML = '';
+  sets.forEach(s => {
+    const o = document.createElement('option');
+    o.value = s.id; o.textContent = s.name;
+    sel.appendChild(o);
+  });
+  selectedKeywordSetId = sel.value;
+  updateKeywordSetTokenDisplay();
+  document.getElementById('keywordSetCard').style.display = 'block';
+}
+
+function updateKeywordSetTokenDisplay() {
+  if (!selectedKeywordCompany || !selectedKeywordSetId) return;
+  const info = calcSetTokenInfo(selectedKeywordCompany, selectedKeywordSetId);
+  const el = document.getElementById('keywordSetTokenInfo');
+  if (el) el.textContent = info;
+}
+
+// ─── パネル3：単語登録ボタン ────────────────────
+function updateKeywordRegisterArea() {
+  const area    = document.getElementById('keywordRegisterArea');
+  const toggleBtn = document.getElementById('keywordRegisterToggleBtn');
+  if (!selectedKeywordSetId) {
+    if (toggleBtn) toggleBtn.style.display = 'none';
+    return;
+  }
+  if (toggleBtn) toggleBtn.style.display = 'block';
+  const infoEl = document.getElementById('keywordRegisterSetInfo');
+  if (infoEl) {
+    const info = calcSetTokenInfo(selectedKeywordCompany, selectedKeywordSetId);
+    infoEl.textContent = `登録先：${selectedKeywordCompany} ／ ${document.getElementById('keywordSetSelect')?.options[document.getElementById('keywordSetSelect')?.selectedIndex]?.text || ''} （${info}）`;
+  }
+}
 
 // ─── テンプレート管理 ────────────────────────
 function getTemplates() {
@@ -1128,41 +1591,328 @@ function resetEditor() {
   document.getElementById('tplPrompt').value = '';
 }
 
-// ─── 単語マスター ────────────────────────────────
-const getWordMaster = () => LS.get('word_master');
+// ─── 打合せ資料 ──────────────────────────────────
+// PDF.js / JSZip はCDNから遅延ロード
+let pdfJsLoaded = false;
+let jsZipLoaded = false;
 
-// 単語マスターの登録済み表示（あいうえお順）
-function renderWordMasterDisplay() {
-  const display = document.getElementById('wordMasterDisplay');
-  if (!display) return;
-  const words = getWordMaster().split('\n').map(s=>s.trim()).filter(Boolean);
-  // あいうえお順（日本語・英語混在対応）
-  words.sort((a, b) => naturalSort(a, b));
-  display.innerHTML = '';
-  if (words.length === 0) {
-    const empty = document.createElement('div');
-    empty.style.cssText = 'font-size:13px;color:var(--text-muted);width:100%;';
-    empty.textContent = '登録された単語はありません';
-    display.appendChild(empty);
-    return;
-  }
-  words.forEach(word => {
-    const tag = document.createElement('div');
-    tag.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:12px;color:var(--text);';
-    tag.textContent = word;
-    display.appendChild(tag);
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = src; s.onload = resolve; s.onerror = reject;
+    document.head.appendChild(s);
   });
 }
 
-// detailsを開いた時に描画
-document.addEventListener('DOMContentLoaded', () => {
-  const details = document.getElementById('wordMasterDetails');
-  if (details) {
-    details.addEventListener('toggle', () => {
-      if (details.open) renderWordMasterDisplay();
-    });
+// 打合せ資料の状態
+const refFiles = []; // { name, size, text }
+
+function formatBytes(bytes) {
+  if (bytes < 1024) return bytes + 'B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + 'KB';
+  return (bytes / 1024 / 1024).toFixed(1) + 'MB';
+}
+
+function getRefTotalSize() {
+  return refFiles.reduce((sum, f) => sum + f.size, 0);
+}
+
+function renderRefFileList() {
+  const listEl   = document.getElementById('refFileList');
+  const infoEl   = document.getElementById('refFilesTotalInfo');
+  const errorEl  = document.getElementById('refFileError');
+  if (!listEl) return;
+  listEl.innerHTML = '';
+  const limit = getRefFileSizeLimit();
+  const total = getRefTotalSize();
+  if (infoEl) {
+    infoEl.textContent = refFiles.length > 0
+      ? `合計 ${formatBytes(total)} / ${formatBytes(limit)}`
+      : '';
+    infoEl.style.color = total > limit * 0.9 ? '#e53e3e' : 'var(--text-muted)';
   }
-});
+  if (errorEl) errorEl.style.display = 'none';
+  refFiles.forEach((f, idx) => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;';
+    const icon = f.name.endsWith('.pdf') ? '📕' : f.name.endsWith('.pptx') ? '📊' : '📄';
+    const nameEl = document.createElement('div');
+    nameEl.style.cssText = 'flex:1;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+    nameEl.textContent = `${icon} ${f.name}`;
+    const sizeEl = document.createElement('div');
+    sizeEl.style.cssText = 'font-size:11px;color:var(--text-muted);flex-shrink:0;';
+    sizeEl.textContent = formatBytes(f.size);
+    const delBtn = document.createElement('button');
+    delBtn.style.cssText = 'color:var(--text-muted);cursor:pointer;font-size:14px;background:none;border:none;padding:2px 6px;flex-shrink:0;';
+    delBtn.textContent = '✕';
+    delBtn.onclick = () => { refFiles.splice(idx, 1); renderRefFileList(); };
+    row.appendChild(nameEl); row.appendChild(sizeEl); row.appendChild(delBtn);
+    listEl.appendChild(row);
+  });
+}
+
+async function extractTextFromPdf(file) {
+  if (!pdfJsLoaded) {
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    pdfJsLoaded = true;
+  }
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  let text = '';
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page    = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    text += content.items.map(item => item.str).join(' ') + '\n';
+  }
+  return text.trim();
+}
+
+async function extractTextFromPptx(file) {
+  if (!jsZipLoaded) {
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
+    jsZipLoaded = true;
+  }
+  const arrayBuffer = await file.arrayBuffer();
+  const zip   = await JSZip.loadAsync(arrayBuffer);
+  const slides = Object.keys(zip.files).filter(n => n.match(/^ppt\/slides\/slide\d+\.xml$/));
+  slides.sort((a, b) => {
+    const na = parseInt(a.match(/\d+/)[0]);
+    const nb = parseInt(b.match(/\d+/)[0]);
+    return na - nb;
+  });
+  let text = '';
+  for (const slideName of slides) {
+    const xml = await zip.files[slideName].async('string');
+    const matches = xml.match(/<a:t[^>]*>([^<]+)<\/a:t>/g) || [];
+    text += matches.map(m => m.replace(/<[^>]+>/g, '')).join(' ') + '\n';
+  }
+  return text.trim();
+}
+
+async function handleRefFiles(files) {
+  const errorEl = document.getElementById('refFileError');
+  const limit   = getRefFileSizeLimit();
+  for (const file of files) {
+    // 形式チェック
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (!['txt','md','pdf','pptx'].includes(ext)) {
+      if (errorEl) { errorEl.textContent = `「${file.name}」は非対応形式です（txt/pdf/pptx）`; errorEl.style.display = 'block'; }
+      continue;
+    }
+    // 重複チェック
+    if (refFiles.some(f => f.name === file.name)) {
+      if (errorEl) { errorEl.textContent = `「${file.name}」は既に追加されています`; errorEl.style.display = 'block'; }
+      continue;
+    }
+    // サイズチェック
+    if (getRefTotalSize() + file.size > limit) {
+      if (errorEl) {
+        errorEl.textContent = `上限（${formatBytes(limit)}）を超えるため「${file.name}」を追加できません`;
+        errorEl.style.display = 'block';
+      }
+      continue;
+    }
+    // テキスト抽出
+    try {
+      let text = '';
+      if (ext === 'pdf') {
+        text = await extractTextFromPdf(file);
+      } else if (ext === 'pptx') {
+        text = await extractTextFromPptx(file);
+      } else {
+        text = await file.text();
+      }
+      if (!text.trim()) {
+        if (errorEl) { errorEl.textContent = `「${file.name}」からテキストを抽出できませんでした（スキャン画像PDFは非対応）`; errorEl.style.display = 'block'; }
+        continue;
+      }
+      refFiles.push({ name: file.name, size: file.size, text });
+      if (errorEl) errorEl.style.display = 'none';
+    } catch(e) {
+      if (errorEl) { errorEl.textContent = `「${file.name}」の読み込みに失敗しました: ${e.message}`; errorEl.style.display = 'block'; }
+    }
+  }
+  renderRefFileList();
+}
+
+// 打合せ資料のテキストをClaudeプロンプト用に構築
+function buildRefFilesSection() {
+  if (refFiles.length === 0) return '';
+  const parts = refFiles.map(f =>
+    `--- ${f.name} ---\n${f.text}`
+  ).join('\n\n');
+  return `\n\n【打合せ資料（補足）】\n以下は商談の背景理解のための参考資料です。議事録には資料の内容を直接引用せず、文脈・専門用語の理解にのみ使用してください。\n\n${parts}`;
+}
+
+// ─── 共通単語マスタ ──────────────────────────────
+const CWS_KEY = 'common_word_sets';
+
+function getCommonWordSets() {
+  try { return JSON.parse(LS.get(CWS_KEY) || '{"sets":[],"selected_id":null}'); }
+  catch(e) { return { sets: [], selected_id: null }; }
+}
+function saveCommonWordSets(data) { LS.set(CWS_KEY, JSON.stringify(data)); }
+
+// 選択中セットのID
+function getSelectedCommonSetId() {
+  return getCommonWordSets().selected_id || getCommonWordSets().sets[0]?.id || null;
+}
+
+// 選択中セットの単語配列を返す
+function getCommonWords() {
+  const data = getCommonWordSets();
+  const id   = getSelectedCommonSetId();
+  return data.sets.find(s => s.id === id)?.words || [];
+}
+
+// ─── 共通単語マスタ：設定画面描画 ─────────────────
+let editingCommonSetId = null;
+
+function renderCommonWordSetList() {
+  const listEl = document.getElementById('commonWordSetList');
+  if (!listEl) return;
+  const data = getCommonWordSets();
+  listEl.innerHTML = '';
+  if (data.sets.length === 0) {
+    listEl.innerHTML = '<div style="font-size:13px;color:var(--text-muted);">登録なし</div>';
+    return;
+  }
+  data.sets.forEach((set, idx) => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;background:var(--surface2);border:1px solid var(--border);';
+    const nameEl = document.createElement('div');
+    nameEl.style.cssText = 'flex:1;font-size:13px;';
+    nameEl.innerHTML = `<span style="font-weight:600;">${set.name}</span><br><span style="font-size:11px;color:var(--text-muted);">${set.words.length}語</span>`;
+    const editBtn = document.createElement('button');
+    editBtn.className = 'btn btn-secondary btn-sm';
+    editBtn.textContent = '編集';
+    editBtn.onclick = () => openCommonWordSetDetail(set.id);
+    const delBtn = document.createElement('button');
+    delBtn.className = 'btn btn-danger';
+    delBtn.textContent = '削除';
+    delBtn.onclick = () => {
+      if (!confirm(`「${set.name}」を削除しますか？`)) return;
+      const d = getCommonWordSets();
+      d.sets.splice(idx, 1);
+      if (d.selected_id === set.id) d.selected_id = d.sets[0]?.id || null;
+      saveCommonWordSets(d);
+      renderCommonWordSetList();
+      updateCommonWordSetSelect();
+      showToast('削除しました');
+    };
+    row.appendChild(nameEl); row.appendChild(editBtn); row.appendChild(delBtn);
+    listEl.appendChild(row);
+  });
+}
+
+function showCommonWordSetAddArea() {
+  document.getElementById('commonWordSetAddArea').style.display = 'flex';
+  document.getElementById('showCommonWordSetAddBtn').style.display = 'none';
+  document.getElementById('commonWordSetNewName').focus();
+}
+function cancelAddCommonWordSet() {
+  document.getElementById('commonWordSetAddArea').style.display = 'none';
+  document.getElementById('showCommonWordSetAddBtn').style.display = 'block';
+  document.getElementById('commonWordSetNewName').value = '';
+}
+function confirmAddCommonWordSet() {
+  const name = document.getElementById('commonWordSetNewName').value.trim();
+  if (!name) { showToast('セット名を入力してください'); return; }
+  const d = getCommonWordSets();
+  if (d.sets.some(s => s.name === name)) { showToast(`「${name}」は既に登録されています`); return; }
+  const newSet = { id: 'cws_' + Date.now(), name, words: [] };
+  d.sets.push(newSet);
+  if (!d.selected_id) d.selected_id = newSet.id;
+  saveCommonWordSets(d);
+  cancelAddCommonWordSet();
+  renderCommonWordSetList();
+  updateCommonWordSetSelect();
+  showToast(`「${name}」を追加しました`);
+}
+
+// ─── 共通単語マスタ詳細モーダル ──────────────────
+function openCommonWordSetDetail(setId) {
+  editingCommonSetId = setId;
+  const data = getCommonWordSets();
+  const set  = data.sets.find(s => s.id === setId);
+  if (!set) return;
+  document.getElementById('commonWordSetDetailTitle').textContent = `📖 ${set.name}`;
+  document.getElementById('commonWordSetDetailInput').value = '';
+  renderCommonWordSetDetailList();
+  document.getElementById('commonWordSetDetailOverlay').classList.add('open');
+}
+
+function renderCommonWordSetDetailList() {
+  const listEl = document.getElementById('commonWordSetDetailWordList');
+  if (!listEl) return;
+  const data = getCommonWordSets();
+  const set  = data.sets.find(s => s.id === editingCommonSetId);
+  if (!set) return;
+  const sorted = [...set.words].sort((a,b) => naturalSort(a,b));
+  document.getElementById('commonWordSetDetailCount').textContent = `${set.words.length}語`;
+  listEl.innerHTML = '';
+  if (sorted.length === 0) {
+    listEl.innerHTML = '<div style="font-size:13px;color:var(--text-muted);padding:8px 0;">登録単語なし</div>';
+    return;
+  }
+  sorted.forEach(word => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:10px;background:var(--surface2);border:1px solid var(--border);';
+    const wordEl = document.createElement('div');
+    wordEl.style.cssText = 'flex:1;font-size:14px;';
+    wordEl.textContent = word;
+    const delBtn = document.createElement('button');
+    delBtn.style.cssText = 'color:var(--text-muted);cursor:pointer;font-size:14px;background:none;border:none;padding:2px 4px;';
+    delBtn.textContent = '✕';
+    delBtn.onclick = () => {
+      const d = getCommonWordSets();
+      const s = d.sets.find(s => s.id === editingCommonSetId);
+      if (s) s.words = s.words.filter(w => w !== word);
+      saveCommonWordSets(d);
+      renderCommonWordSetDetailList();
+      renderCommonWordSetList();
+      updateCommonWordSetSelect();
+    };
+    row.appendChild(wordEl); row.appendChild(delBtn);
+    listEl.appendChild(row);
+  });
+}
+
+// ─── パネル1：共通単語マスタ選択 ─────────────────
+function updateCommonWordSetSelect() {
+  const sel  = document.getElementById('commonWordSetSelect');
+  const card = document.getElementById('commonWordSetCard');
+  const data = getCommonWordSets();
+  if (!sel || !card) return;
+  sel.innerHTML = '';
+  if (data.sets.length === 0) {
+    card.style.display = 'none';
+    return;
+  }
+  data.sets.forEach(s => {
+    const o = document.createElement('option');
+    o.value = s.id; o.textContent = `${s.name}（${s.words.length}語）`;
+    if (s.id === (data.selected_id || data.sets[0].id)) o.selected = true;
+    sel.appendChild(o);
+  });
+  card.style.display = 'block';
+  updateCommonWordSetInfo();
+}
+
+function updateCommonWordSetInfo() {
+  const sel = document.getElementById('commonWordSetSelect');
+  const el  = document.getElementById('commonWordSetInfo');
+  if (!sel || !el) return;
+  const id  = sel.value;
+  const data = getCommonWordSets();
+  const set  = data.sets.find(s => s.id === id);
+  el.textContent = set ? `${set.words.length}語` : '';
+}
+
+// 廃止互換：旧word_masterは使用しない（getWordMasterは空を返す）
+const getWordMaster = () => '';
 
 // ─── バックアップ：一括エクスポート ──────────────
 function downloadJson(data, filename) {
@@ -1201,16 +1951,21 @@ document.getElementById('exportAllBtn').addEventListener('click', () => {
     groq_model:           getGroqModel(),
     groq_language:        getGroqLanguage(),
     groq_temperature:     getGroqTemperature(),
-    groq_send_word_master:getGroqSendWordMaster() ? 'true' : 'false',
+    groq_send_word_master: getGroqSendWordMaster()  ? 'true' : 'false',
+    groq_use_keyword_set:  getGroqUseKeywordSet()   ? 'true' : 'false',
     deepgram_model:       getDeepgramModel(),
     deepgram_language:    getDeepgramLanguage(),
     deepgram_smart_format:getDeepgramSmartFormat() ? 'true' : 'false',
     deepgram_send_keyterm:getDeepgramSendKeyterm() ? 'true' : 'false',
+    use_keyword_set:      getUseKeywordSet()       ? 'true' : 'false',
+    ref_file_size_limit:  String(getRefFileSizeLimit()),
     diarize:              getDiarize() ? 'true' : 'false',
     // データ
     templates:     getTemplates(),
     master_data:   LS.get('master_data'),
     word_master:   getWordMaster(),
+    keyword_sets:  LS.get('keyword_sets') || '[]',
+    common_word_sets: LS.get('common_word_sets') || '{"sets":[],"selected_id":null}',
   };
   downloadJson(data, 'NAUTO BACKUP ' + getDateStamp() + '.json');
   showToast('一括エクスポートしました');
@@ -1244,14 +1999,19 @@ document.getElementById('importAllFile').addEventListener('change', e => {
       if (data.groq_language)         LS.set('groq_language',         data.groq_language);
       if (data.groq_temperature)      LS.set('groq_temperature',      data.groq_temperature);
       if (data.groq_send_word_master) LS.set('groq_send_word_master', data.groq_send_word_master);
+      if (data.groq_use_keyword_set)  LS.set('groq_use_keyword_set',  data.groq_use_keyword_set);
       if (data.deepgram_model)        LS.set('deepgram_model',        data.deepgram_model);
       if (data.deepgram_language)     LS.set('deepgram_language',     data.deepgram_language);
       if (data.deepgram_smart_format) LS.set('deepgram_smart_format', data.deepgram_smart_format);
       if (data.deepgram_send_keyterm) LS.set('deepgram_send_keyterm', data.deepgram_send_keyterm);
+      if (data.use_keyword_set)       LS.set('use_keyword_set',       data.use_keyword_set);
+      if (data.ref_file_size_limit)   LS.set('ref_file_size_limit',   data.ref_file_size_limit);
       // データ
       if (data.templates)     saveTemplates(data.templates);
       if (data.master_data)   LS.set('master_data',    data.master_data);
       if (data.word_master)   LS.set('word_master',    data.word_master);
+      if (data.keyword_sets)     LS.set('keyword_sets',        data.keyword_sets);
+      if (data.common_word_sets) LS.set('common_word_sets', data.common_word_sets);
       // 画面更新
       document.getElementById('settingMyName').value    = getMyName();
       document.getElementById('settingMyCompany').value = getMyCompany();
@@ -1259,7 +2019,6 @@ document.getElementById('importAllFile').addEventListener('change', e => {
       document.getElementById('deepgramKey').value      = getDeepgramKey();
       document.getElementById('anthropicKey').value     = getAnthropicKey();
       document.getElementById('settingMailTo').value    = getMailTo();
-      document.getElementById('wordMaster').value       = getWordMaster();
       // 詳細設定
       document.getElementById('groqCoeff').value            = getGroqCoeff();
       document.getElementById('deepgramCoeff').value         = getDeepgramCoeff();
@@ -1275,6 +2034,8 @@ document.getElementById('importAllFile').addEventListener('change', e => {
       document.getElementById('deepgramLanguage').value      = getDeepgramLanguage();
       document.getElementById('deepgramSmartFormat').checked = getDeepgramSmartFormat();
       document.getElementById('deepgramSendKeyterm').checked = getDeepgramSendKeyterm();
+      document.getElementById('useKeywordSet').checked       = getUseKeywordSet();
+      document.getElementById('refFileSizeLimit').value      = getRefFileSizeLimit();
       document.getElementById('diarizeEnabled').checked      = getDiarize();
       const svc = getSttService();
       document.querySelector(`input[name="sttService"][value="${svc}"]`).checked = true;
@@ -1284,6 +2045,7 @@ document.getElementById('importAllFile').addEventListener('change', e => {
       renderTemplateList(); updateTemplateSelect();
       renderMasterList();
       updateMemberSelf(); updateApiStatus(); updateStartBtn();
+      updateCommonWordSetSelect();
       showToast('一括インポートしました');
     } catch(err) { showToast('読み込みに失敗しました: ' + err.message); }
     e.target.value = '';
@@ -1396,10 +2158,16 @@ function renderMemberTags(type) {
     const txt = document.createElement('span'); txt.textContent = name;
     const rm  = document.createElement('span');
     rm.className = 'member-tag-remove'; rm.textContent = '✕';
-    rm.onclick = () => { members[type].splice(idx, 1); renderMemberTags(type); };
+    rm.onclick = () => {
+      members[type].splice(idx, 1);
+      renderMemberTags(type);
+      if (type === 'customer') updateKeywordSetSelector();
+    };
     tag.appendChild(txt); tag.appendChild(rm);
     list.appendChild(tag);
   });
+  // お客様タグ変更時にキーワードセット連動
+  if (type === 'customer') updateKeywordSetSelector();
 }
 
 // picker描画（会社一覧→担当者一覧の2段階）
@@ -1786,6 +2554,7 @@ document.getElementById('textFile').addEventListener('change', e => {
     state.textFile = ev.target.result;
     state.file = null; // 音声ファイルをクリア
     document.getElementById('audioFile').value = '';
+    refFiles.length = 0; renderRefFileList(); // 打合せ資料クリア
     document.getElementById('fileZone').classList.remove('has-file');
     document.getElementById('fileName').textContent = '';
     document.getElementById('fileSize').innerHTML = '';
@@ -1858,7 +2627,6 @@ function openModal() {
     document.getElementById('deepgramKey').value      = getDeepgramKey();
     document.getElementById('anthropicKey').value     = getAnthropicKey();
     document.getElementById('settingMailTo').value    = getMailTo();
-    document.getElementById('wordMaster').value           = getWordMaster();
     document.getElementById('groqCoeff').value            = getGroqCoeff();
     document.getElementById('deepgramCoeff').value        = getDeepgramCoeff();
     document.getElementById('claudeCoeff').value          = getClaudeCoeff();
@@ -1868,7 +2636,8 @@ function openModal() {
     document.getElementById('groqLanguage').value         = getGroqLanguage();
     document.getElementById('groqTemperature').value      = getGroqTemperature();
     document.getElementById('groqTemperatureVal').textContent = getGroqTemperature();
-    renderWordMasterDisplay();
+    renderCommonWordSetList();
+    updateCommonWordSetSelect();
     document.getElementById('groqSendWordMaster').checked = getGroqSendWordMaster();
 
     // サービス選択を復元
@@ -1933,7 +2702,6 @@ document.getElementById('saveSettings').addEventListener('click',()=>{
   LS.set('deepgram_key',   document.getElementById('deepgramKey').value.trim());
   LS.set('anthropic_key',  document.getElementById('anthropicKey').value.trim());
   LS.set('mail_to',        document.getElementById('settingMailTo').value.trim());
-  LS.set('word_master',          document.getElementById('wordMaster').value.trim());
   LS.set('groq_coeff',           document.getElementById('groqCoeff').value);
   LS.set('deepgram_coeff',       document.getElementById('deepgramCoeff').value);
   LS.set('claude_coeff',         document.getElementById('claudeCoeff').value);
@@ -1942,7 +2710,8 @@ document.getElementById('saveSettings').addEventListener('click',()=>{
   LS.set('groq_model',           document.getElementById('groqModel').value);
   LS.set('groq_language',        document.getElementById('groqLanguage').value.trim());
   LS.set('groq_temperature',     document.getElementById('groqTemperature').value);
-  LS.set('groq_send_word_master',document.getElementById('groqSendWordMaster').checked ? 'true' : 'false');
+  LS.set('groq_send_word_master', document.getElementById('groqSendWordMaster').checked  ? 'true' : 'false');
+  LS.set('groq_use_keyword_set',  document.getElementById('groqUseKeywordSet').checked   ? 'true' : 'false');
   LS.set('stt_service',    document.querySelector('input[name="sttService"]:checked')?.value || 'groq');
   LS.set('groq_fallback',  document.querySelector('input[name="groqFallback"]:checked')?.value || 'deepgram');
   LS.set('diarize',              document.getElementById('diarizeEnabled').checked ? 'true' : 'false');
@@ -1950,6 +2719,8 @@ document.getElementById('saveSettings').addEventListener('click',()=>{
   LS.set('deepgram_language',    document.getElementById('deepgramLanguage').value);
   LS.set('deepgram_smart_format',document.getElementById('deepgramSmartFormat').checked ? 'true' : 'false');
   LS.set('deepgram_send_keyterm',document.getElementById('deepgramSendKeyterm').checked ? 'true' : 'false');
+  LS.set('use_keyword_set',      document.getElementById('useKeywordSet').checked       ? 'true' : 'false');
+  LS.set('ref_file_size_limit',  document.getElementById('refFileSizeLimit').value);
   closeModal(); updateMemberSelf(); updateApiStatus(); updateStartBtn();
   showToast('設定を保存しました');
 });
@@ -2014,11 +2785,18 @@ async function transcribeBlob(blob, filename) {
   // temperature
   formData.append('temperature', getGroqTemperature());
 
-  // ③ 単語マスタをGroqのpromptパラメータに渡す（設定でオンの場合のみ）
-  if (getGroqSendWordMaster()) {
-    const wordList = getWordMaster().split('\n').map(s=>s.trim()).filter(Boolean);
-    if (wordList.length > 0) {
-      formData.append('prompt', wordList.join('、'));
+  // ③ promptパラメータ構築
+  // キーワードセットONかつ選択済みならセット優先、なければ単語マスタをフォールバック
+  if (getGroqSendWordMaster() || getGroqUseKeywordSet()) {
+    let promptWords = [];
+    if (getGroqUseKeywordSet() && getUseKeywordSet() && selectedKeywordSetId && selectedKeywordCompany) {
+      promptWords = getKeytermWords(selectedKeywordCompany, selectedKeywordSetId);
+    }
+    if (promptWords.length === 0 && getGroqSendWordMaster()) {
+      promptWords = getCommonWords();
+    }
+    if (promptWords.length > 0) {
+      formData.append('prompt', promptWords.join('、'));
     }
   }
 
@@ -2122,10 +2900,25 @@ async function transcribeWithDeepgram(file) {
   if (name.endsWith('.webm')) contentType = 'audio/webm';
   if (name.endsWith('.mp4'))  contentType = 'audio/mp4';
 
-  // ② 単語マスタをDeepgramのkeytermパラメータに渡す（設定でオンの場合）
-  const wordList = getWordMaster().split('\n').map(s=>s.trim()).filter(Boolean);
-  const keytermParam = getDeepgramSendKeyterm() && wordList.length > 0
-    ? wordList.map(w => `keyterm=${encodeURIComponent(w)}`).join('&')
+  // ② keytermパラメータ構築
+  // キーワードセットONかつ選択済みの場合はセットを優先、なければ単語マスタをフォールバック
+  let keytermWords = [];
+  if (getUseKeywordSet() && selectedKeywordSetId && selectedKeywordCompany) {
+    keytermWords = getKeytermWords(selectedKeywordCompany, selectedKeywordSetId);
+  }
+  if (keytermWords.length === 0 && getDeepgramSendKeyterm()) {
+    // 共通単語マスタからフォールバック（トークン500以内に収める）
+    const allWords = getCommonWords();
+    let tokens = 0;
+    for (const w of allWords) {
+      const t = estimateTokens(w);
+      if (tokens + t > 500) break;
+      keytermWords.push(w);
+      tokens += t;
+    }
+  }
+  const keytermParam = keytermWords.length > 0
+    ? keytermWords.map(w => `keyterm=${encodeURIComponent(w)}`).join('&')
     : '';
 
   // ① パラメータ構築
@@ -2197,9 +2990,14 @@ async function generateMinutes(transcript, stepCur, stepTotal) {
   const datetime= getMeetingDatetime();
   const members = getMembersText();
   const topic   = document.getElementById('meetingTopic').value.trim()||'（未記入）';
-  const wordList = getWordMaster().split('\n').map(s=>s.trim()).filter(Boolean);
-  const wordSection = wordList.length > 0
-    ? `以下の専門用語・固有名詞を正確に使用してください：\n${wordList.join('、')}\n\n`
+  // 共通単語マスタ全件＋商談単語マスタ全件をClaudeに渡す（制限なし）
+  const commonWords = getCommonWords();
+  const dealWords   = (selectedKeywordSetId && selectedKeywordCompany)
+    ? (getKeywordSets().find(e=>e.company===selectedKeywordCompany)?.sets.find(s=>s.id===selectedKeywordSetId)?.words.map(w=>w.word) || [])
+    : [];
+  const allVocab = [...new Set([...commonWords, ...dealWords])];
+  const wordSection = allVocab.length > 0
+    ? `以下の専門用語・固有名詞を正確に使用してください：\n${allVocab.join('、')}\n\n`
     : '';
 
   // Claudeへの固定指示（カスタム設定があれば使用、なければデフォルト）
@@ -2215,9 +3013,12 @@ async function generateMinutes(transcript, stepCur, stepTotal) {
     `・テンプレートで指定したセクション以外（■ 概要・■ まとめ等）は絶対に追加しないでください。\n` +
     `・出力はテンプレートのフォーマットのみとし、余計なセクションは一切追加しないでください。`;
 
+  const refSection = buildRefFilesSection();
+
   const prompt  =
     systemInstruction + `\n\n` +
     wordSection +
+    refSection +
     `【会議情報】\n- 日時：${datetime}\n- 参加者：${members}\n- 議題：${topic}\n\n`+
     `【文字起こし】\n${transcript}\n\n---\n\n`+
     `【議事録作成の指示】\n${tpl.prompt}`;
@@ -2298,6 +3099,15 @@ function finishProcessing(tStart, sizeMB, usedDeepgram, usage) {
 
     // 議事録を履歴に保存
     saveToHistory();
+
+    // キーワードセット：文字起こしに出現した単語のスコア+1
+    if (selectedKeywordSetId && selectedKeywordCompany && state.transcript) {
+      incrementKeytermScores(selectedKeywordCompany, selectedKeywordSetId, state.transcript);
+    }
+
+    // パネル3の単語登録エリア更新
+    updateKeywordRegisterArea();
+
     setStep(3);
   }, 400);
 }
@@ -2734,6 +3544,188 @@ try {
     if (e.target === document.getElementById('helpOverlay'))
       document.getElementById('helpOverlay').classList.remove('open');
   });
+
+  // ─── 打合せ資料 ──────────────────────────────
+  document.getElementById('refFileInput').addEventListener('change', async e => {
+    const files = Array.from(e.target.files);
+    e.target.value = ''; // 同じファイルを再選択できるようリセット
+    if (files.length > 0) await handleRefFiles(files);
+  });
+
+  // ─── 共通単語マスタ関連 ──────────────────────
+  // 初期表示
+  updateCommonWordSetSelect();
+
+  // 設定画面：開いた時に描画
+  const cwsDetails = document.getElementById('commonWordSetDetails');
+  if (cwsDetails) {
+    cwsDetails.addEventListener('toggle', () => {
+      if (cwsDetails.open) renderCommonWordSetList();
+    });
+  }
+  // セット追加ボタン
+  const showCwsBtn = document.getElementById('showCommonWordSetAddBtn');
+  if (showCwsBtn) showCwsBtn.addEventListener('click', showCommonWordSetAddArea);
+
+  // 詳細モーダル
+  document.getElementById('closeCommonWordSetDetail').addEventListener('click', () => {
+    document.getElementById('commonWordSetDetailOverlay').classList.remove('open');
+    renderCommonWordSetList();
+    updateCommonWordSetSelect();
+  });
+  document.getElementById('commonWordSetDetailOverlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('commonWordSetDetailOverlay')) {
+      document.getElementById('commonWordSetDetailOverlay').classList.remove('open');
+      renderCommonWordSetList();
+      updateCommonWordSetSelect();
+    }
+    e.stopPropagation();
+  });
+  // 単語追加ボタン（カンマ区切り一括対応）
+  document.getElementById('commonWordSetDetailAddBtn').addEventListener('click', () => {
+    const inp   = document.getElementById('commonWordSetDetailInput');
+    const input = inp.value.trim();
+    if (!input) return;
+    const words = input.split(/[,、，]/).map(s=>s.trim()).filter(Boolean);
+    const d = getCommonWordSets();
+    const s = d.sets.find(s => s.id === editingCommonSetId);
+    if (!s) return;
+    let added = 0;
+    words.forEach(w => { if (!s.words.includes(w)) { s.words.push(w); added++; } });
+    saveCommonWordSets(d);
+    inp.value = '';
+    renderCommonWordSetDetailList();
+    renderCommonWordSetList();
+    updateCommonWordSetSelect();
+    showToast(`${added}語を登録しました`);
+  });
+  document.getElementById('commonWordSetDetailInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('commonWordSetDetailAddBtn').click();
+  });
+  // パネル1：セット選択変更時
+  document.getElementById('commonWordSetSelect').addEventListener('change', e => {
+    const d = getCommonWordSets();
+    d.selected_id = e.target.value;
+    saveCommonWordSets(d);
+    updateCommonWordSetInfo();
+  });
+
+  // ─── キーワードセット（商談単語マスタ）関連 ────────
+  // 設定画面：キーワードセット詳細open時に描画
+  const ksDetails = document.getElementById('keywordSetDetails');
+  if (ksDetails) {
+    ksDetails.addEventListener('toggle', () => {
+      if (ksDetails.open) renderKeywordSetList();
+    });
+  }
+
+  // 設定画面：会社追加ボタン
+  const showKsBtn = document.getElementById('showKeywordCompanySelectBtn');
+  if (showKsBtn) showKsBtn.addEventListener('click', showKeywordCompanySelectArea);
+
+  // キーワードセット詳細モーダル
+  document.getElementById('closeKeywordSetDetail').addEventListener('click', () => {
+    document.getElementById('keywordSetDetailOverlay').classList.remove('open');
+    renderKeywordSetList(); // 設定画面のリストを更新
+  });
+  document.getElementById('keywordSetDetailOverlay').addEventListener('click', e => {
+    // オーバーレイ自体（背景）のクリックのみ閉じる。モーダル内クリックは伝播させない
+    if (e.target === document.getElementById('keywordSetDetailOverlay')) {
+      document.getElementById('keywordSetDetailOverlay').classList.remove('open');
+      renderKeywordSetList();
+    }
+    e.stopPropagation(); // 設定モーダルへのクリック伝播を防ぐ
+  });
+  // 詳細モーダル：単語追加
+  document.getElementById('keywordSetAddWordBtn').addEventListener('click', () => {
+    const inp = document.getElementById('keywordSetAddWordInput');
+    const word = inp.value.trim();
+    if (!word) return;
+    addWordToSet(editingKeywordSetCompany, editingKeywordSetId, word, 3);
+    inp.value = '';
+    renderKeywordSetWordList();
+    showToast('登録しました（score +3）');
+  });
+  document.getElementById('keywordSetAddWordInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('keywordSetAddWordBtn').click();
+  });
+
+  // パネル1：キーワードセット選択変更時
+  document.getElementById('keywordSetSelect').addEventListener('change', e => {
+    selectedKeywordSetId = e.target.value;
+    updateKeywordSetTokenDisplay();
+  });
+
+  // パネル3：単語登録トグルボタン
+  document.getElementById('keywordRegisterToggleBtn').addEventListener('click', () => {
+    const area = document.getElementById('keywordRegisterArea');
+    const isOpen = area.style.display === 'flex';
+    area.style.display = isOpen ? 'none' : 'flex';
+    updateKeywordRegisterArea();
+  });
+
+  // パネル3：単語登録実行
+  document.getElementById('keywordRegisterBtn').addEventListener('click', () => {
+    const inp  = document.getElementById('keywordRegisterInput');
+    const word = inp.value.trim();
+    if (!word) { showToast('単語を入力してください'); return; }
+    if (!selectedKeywordSetId || !selectedKeywordCompany) { showToast('キーワードセットが選択されていません'); return; }
+    addWordToSet(selectedKeywordCompany, selectedKeywordSetId, word, 3);
+    inp.value = '';
+    updateKeywordRegisterArea();
+    showToast(`「${word}」を登録しました（score +3）`);
+    // Claudeで修正ボタンを表示
+    document.getElementById('keywordFixMinutesBtn').style.display = 'block';
+  });
+  document.getElementById('keywordRegisterInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('keywordRegisterBtn').click();
+  });
+
+  // パネル3：Claudeで議事録修正
+  document.getElementById('keywordFixMinutesBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('keywordFixMinutesBtn');
+    btn.disabled = true;
+    btn.textContent = '修正中...';
+    try {
+      const inp   = document.getElementById('keywordRegisterInput');
+      const entry = getKeywordSets().find(e => e.company === selectedKeywordCompany);
+      const set   = entry?.sets.find(s => s.id === selectedKeywordSetId);
+      const words = set ? set.words.map(w => w.word).join('、') : '';
+      const prompt = `以下の議事録に含まれる可能性のある誤認識を、登録単語リストを参考に修正してください。
+
+【登録単語リスト】
+${words}
+
+【修正対象の議事録】
+${state.minutes}
+
+【指示】
+・登録単語と明らかに異なる誤認識のみ修正してください。
+・内容の追加・削除はしないでください。
+・修正後の議事録テキストのみ出力してください。`;
+      const cr = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json', 'x-api-key':getAnthropicKey(), 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' },
+        body: JSON.stringify({ model:'claude-sonnet-4-5', max_tokens: getMaxTokens(), messages:[{role:'user',content:prompt}] }),
+      });
+      if (!cr.ok) throw new Error('APIエラー');
+      const cd = await cr.json();
+      const fixed = cd.content?.[0]?.text || '';
+      if (fixed) {
+        state.minutes = fixed;
+        document.getElementById('minutesResult').textContent = fixed;
+        document.getElementById('minutesEdit').value = fixed;
+        showToast('議事録を修正しました');
+        btn.style.display = 'none';
+      }
+    } catch(err) {
+      showToast('修正に失敗しました: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '🤖 Claudeで議事録を修正';
+    }
+  });
+
 } catch(e) {
   console.error('初期化エラー:', e);
 }
