@@ -242,7 +242,7 @@
     <div class="header-catch">Less Writing.<br>More Talking.</div>
   </div>
   <div class="header-right">
-    <div class="header-version">v2.7.9</div>
+    <div class="header-version">v2.8.0</div>
     <div style="display:flex;gap:8px;">
       <div class="settings-btn" id="historyHeaderBtn" style="font-size:16px;">📚</div>
       <div class="settings-btn" id="helpBtn" style="font-size:15px;font-weight:700;">?</div>
@@ -403,6 +403,10 @@
       <div id="progressLabel" style="font-size:15px;font-weight:500;">送信中...</div>
       <div class="progress-bar-bg"><div class="progress-bar" id="progressBar"></div></div>
       <div id="progressSub" style="font-size:13px;color:var(--text-muted);"></div>
+    </div>
+    <div id="busyNotice" style="display:none;background:rgba(214,138,0,0.10);border:1.5px solid #d68a00;border-radius:var(--radius);padding:12px 14px;font-size:13px;color:var(--text);line-height:1.6;">
+      ⚠️ 処理が終わるまで、<b>この画面を開いたまま</b>にしてください。他のアプリへの切り替えや画面ロックで処理が止まることがあります。
+      <div id="wakeLockState" style="font-size:11px;color:var(--text-muted);margin-top:4px;"></div>
     </div>
     <div class="error-box" id="processError"></div>
     <!-- 文字起こし保持時のみ表示 -->
@@ -980,6 +984,23 @@
         </label>
 
         <div class="modal-divider" style="margin:8px 0;"></div>
+        <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;">📱 処理中の動作（iPhone向け）</div>
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 14px;background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;">
+          <input type="checkbox" id="keepAwakeOpt" style="width:18px;height:18px;cursor:pointer;" checked>
+          <div>
+            <div style="font-size:14px;font-weight:600;color:var(--text);">処理中は画面を消さない</div>
+            <div style="font-size:12px;color:var(--text-muted);">画面スリープによる処理中断を防ぐ（バッテリー消費は増えます）</div>
+          </div>
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 14px;background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;margin-top:8px;">
+          <input type="checkbox" id="notifySoundOpt" style="width:18px;height:18px;cursor:pointer;" checked>
+          <div>
+            <div style="font-size:14px;font-weight:600;color:var(--text);">完了時に音で知らせる</div>
+            <div style="font-size:12px;color:var(--text-muted);">議事録ができたら短い音を鳴らす（マナーモード時は鳴りません）</div>
+          </div>
+        </label>
+
+        <div class="modal-divider" style="margin:8px 0;"></div>
         <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;">📄 打合せ資料</div>
         <div class="input-group">
           <div class="label">合計ファイルサイズ上限</div>
@@ -1173,6 +1194,8 @@ const getDeepgramLanguage   = () => LS.get('deepgram_language')    || 'ja';
 const getDeepgramSmartFormat= () => LS.get('deepgram_smart_format') === 'true';
 const getDeepgramSendKeyterm= () => LS.get('deepgram_send_keyterm') !== 'false';
 const getUseKeywordSet      = () => LS.get('use_keyword_set') !== 'false'; // デフォルトtrue
+const getKeepAwake          = () => LS.get('keep_awake')   !== 'false'; // デフォルトtrue
+const getNotifySound        = () => LS.get('notify_sound') !== 'false'; // デフォルトtrue
 const getRefFileSizeLimit   = () => parseInt(LS.get('ref_file_size_limit') || '512000');
 const getGroqFallback  = () => LS.get('groq_fallback') || 'deepgram';
 // 詳細設定
@@ -2010,6 +2033,8 @@ document.getElementById('exportAllBtn').addEventListener('click', () => {
     deepgram_smart_format:getDeepgramSmartFormat() ? 'true' : 'false',
     deepgram_send_keyterm:getDeepgramSendKeyterm() ? 'true' : 'false',
     use_keyword_set:      getUseKeywordSet()       ? 'true' : 'false',
+    keep_awake:           getKeepAwake()           ? 'true' : 'false',
+    notify_sound:         getNotifySound()         ? 'true' : 'false',
     ref_file_size_limit:  String(getRefFileSizeLimit()),
     diarize:              getDiarize() ? 'true' : 'false',
     // データ
@@ -2058,6 +2083,8 @@ document.getElementById('importAllFile').addEventListener('change', e => {
       if (data.deepgram_smart_format) LS.set('deepgram_smart_format', data.deepgram_smart_format);
       if (data.deepgram_send_keyterm) LS.set('deepgram_send_keyterm', data.deepgram_send_keyterm);
       if (data.use_keyword_set)       LS.set('use_keyword_set',       data.use_keyword_set);
+      if (data.keep_awake)            LS.set('keep_awake',            data.keep_awake);
+      if (data.notify_sound)          LS.set('notify_sound',          data.notify_sound);
       if (data.ref_file_size_limit)   LS.set('ref_file_size_limit',   data.ref_file_size_limit);
       // データ
       if (data.templates)     saveTemplates(data.templates);
@@ -2089,6 +2116,8 @@ document.getElementById('importAllFile').addEventListener('change', e => {
       document.getElementById('deepgramSmartFormat').checked = getDeepgramSmartFormat();
       document.getElementById('deepgramSendKeyterm').checked = getDeepgramSendKeyterm();
       document.getElementById('useKeywordSet').checked       = getUseKeywordSet();
+      document.getElementById('keepAwakeOpt').checked        = getKeepAwake();
+      document.getElementById('notifySoundOpt').checked      = getNotifySound();
       document.getElementById('refFileSizeLimit').value      = getRefFileSizeLimit();
       document.getElementById('diarizeEnabled').checked      = getDiarize();
       const svc = getSttService();
@@ -2808,6 +2837,8 @@ document.getElementById('saveSettings').addEventListener('click',()=>{
   LS.set('deepgram_smart_format',document.getElementById('deepgramSmartFormat').checked ? 'true' : 'false');
   LS.set('deepgram_send_keyterm',document.getElementById('deepgramSendKeyterm').checked ? 'true' : 'false');
   LS.set('use_keyword_set',      document.getElementById('useKeywordSet').checked       ? 'true' : 'false');
+  LS.set('keep_awake',           document.getElementById('keepAwakeOpt').checked        ? 'true' : 'false');
+  LS.set('notify_sound',         document.getElementById('notifySoundOpt').checked      ? 'true' : 'false');
   LS.set('ref_file_size_limit',  document.getElementById('refFileSizeLimit').value);
   closeModal(); updateMemberSelf(); updateApiStatus(); updateStartBtn();
   showToast('設定を保存しました');
@@ -3132,6 +3163,7 @@ async function generateMinutes(transcript, stepCur, stepTotal) {
 
 // 完了処理（共通）
 function finishProcessing(tStart, sizeMB, usedDeepgram, usage) {
+  Busy.end(true);
   setProgress(100, '✅ 完了！', '', 2, 2);
   const totalSec      = Math.round((Date.now() - tStart) / 1000);
   const inputTokens   = usage?.input_tokens  || 1500;
@@ -3200,9 +3232,78 @@ function finishProcessing(tStart, sizeMB, usedDeepgram, usage) {
   }, 400);
 }
 
+// ─── 処理中の保護（画面スリープ防止・中断検知・完了通知）─────
+const Busy = (() => {
+  let active = false, lock = null, audioCtx = null, hiddenAt = 0, interrupted = false;
+  const setState = (txt) => { const el = document.getElementById('wakeLockState'); if (el) el.textContent = txt; };
+  async function acquire() {
+    if (!getKeepAwake()) { setState('画面スリープ防止：オフ（設定で変更可）'); return; }
+    if (!('wakeLock' in navigator)) { setState('画面スリープ防止：この端末では非対応です。画面を消さないようご注意ください'); return; }
+    try {
+      lock = await navigator.wakeLock.request('screen');
+      lock.addEventListener('release', () => { lock = null; });
+      setState('画面スリープ防止：有効');
+    } catch (e) { lock = null; setState('画面スリープ防止：取得できませんでした。画面を消さないようご注意ください'); }
+  }
+  function release() { try { lock && lock.release(); } catch (e) {} lock = null; }
+  function beep() {
+    try {
+      if (!audioCtx) return;
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      [[880, 0], [1175, 0.16]].forEach(([f, t]) => {
+        const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+        o.type = 'sine'; o.frequency.value = f; o.connect(g); g.connect(audioCtx.destination);
+        const t0 = audioCtx.currentTime + t;
+        g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.18, t0 + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.28);
+        o.start(t0); o.stop(t0 + 0.3);
+      });
+    } catch (e) {}
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (!active) return;
+    if (document.hidden) { hiddenAt = Date.now(); }
+    else {
+      if (hiddenAt && Date.now() - hiddenAt > 3000) interrupted = true;
+      hiddenAt = 0;
+      if (!lock) acquire(); // 復帰時にロックを再取得
+    }
+  });
+  window.addEventListener('beforeunload', (e) => { if (active) { e.preventDefault(); e.returnValue = ''; } });
+  return {
+    start() { // ボタン操作の中で呼ぶ（音の再生許可を得るため）
+      active = true; interrupted = false; hiddenAt = 0;
+      document.getElementById('busyNotice').style.display = 'block';
+      try {
+        if (getNotifySound()) {
+          audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+          if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
+      } catch (e) {}
+      acquire();
+    },
+    end(ok) {
+      active = false; release();
+      document.getElementById('busyNotice').style.display = 'none';
+      if (ok) {
+        if (getNotifySound()) beep();
+        try { navigator.vibrate && navigator.vibrate(200); } catch (e) {}
+      }
+    },
+    wasInterrupted() { return interrupted; },
+  };
+})();
+function busyErrorMessage(err) {
+  let m = err && err.message ? err.message : String(err);
+  if (Busy.wasInterrupted() && /Load failed|Failed to fetch|NetworkError|network|通信|タイムアウト/i.test(m)) {
+    m += '（処理中に画面を離れたため、通信が中断された可能性があります。画面を開いたまま、もう一度お試しください）';
+  }
+  return m;
+}
+
 // ─── メイン処理 ──────────────────────────────
 document.getElementById('startBtn').addEventListener('click', async () => {
   clearError('processError'); clearError('fileError'); setStep(2);
+  Busy.start();
   document.getElementById('transcriptSavedMsg').style.display = 'none';
   document.getElementById('retryClaudeBtn').style.display     = 'none';
   document.getElementById('backBtn').style.display            = 'none';
@@ -3283,7 +3384,9 @@ document.getElementById('startBtn').addEventListener('click', async () => {
       document.getElementById('transcriptSavedMsg').style.display = 'block';
       document.getElementById('retryClaudeBtn').style.display     = 'block';
     }
-    showError('processError', '❌ '+err.message);
+    const _m = busyErrorMessage(err);
+    Busy.end(false);
+    showError('processError', '❌ '+_m);
     document.getElementById('backBtn').style.display = 'block';
   }
 });
@@ -3295,12 +3398,15 @@ document.getElementById('retryClaudeBtn').addEventListener('click', async () => 
   document.getElementById('transcriptSavedMsg').style.display = 'none';
   document.getElementById('backBtn').style.display            = 'none';
   const tStart = Date.now();
+  Busy.start();
   try {
     const { text, usage } = await generateMinutes(state.transcript, 1, 1);
     state.minutes = text;
     finishProcessing(tStart, 0, false, usage);
   } catch(err) {
-    showError('processError', '❌ '+err.message);
+    const _m = busyErrorMessage(err);
+    Busy.end(false);
+    showError('processError', '❌ '+_m);
     document.getElementById('retryClaudeBtn').style.display     = 'block';
     document.getElementById('transcriptSavedMsg').style.display = 'block';
     document.getElementById('backBtn').style.display            = 'block';
