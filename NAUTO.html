@@ -242,7 +242,7 @@
     <div class="header-catch">Less Writing.<br>More Talking.</div>
   </div>
   <div class="header-right">
-    <div class="header-version">v2.7.5</div>
+    <div class="header-version">v2.7.6</div>
     <div style="display:flex;gap:8px;">
       <div class="settings-btn" id="historyHeaderBtn" style="font-size:16px;">📚</div>
       <div class="settings-btn" id="helpBtn" style="font-size:15px;font-weight:700;">?</div>
@@ -1023,6 +1023,15 @@
 <div class="toast" id="toast"></div>
 
 <script>
+// ─── Claude API共通 ───────────────────────────
+// Sonnet 5.5は応答先頭がthinkingブロックになり得るため、type==='text'を連結して取り出す
+function extractClaudeText(cd) {
+  return (cd?.content || []).filter(b => b.type === 'text').map(b => b.text || '').join('').trim();
+}
+// 思考は議事録用途では不要。between_toolsで先頭思考をオフ（5.5では"disabled"は400エラー）
+const CLAUDE_MODEL    = 'claude-sonnet-5-5';
+const CLAUDE_THINKING = { type: 'between_tools' };
+
 // ─── 定数 ─────────────────────────────────────
 const MAX_FILE_MB  = 100; // ファイル上限
 const CHUNK_MAX_MB = 23;  // Groq無料枠25MB以内に収まるよう余裕を持たせる
@@ -3029,7 +3038,7 @@ async function generateMinutes(transcript, stepCur, stepTotal) {
     cr = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type':'application/json', 'x-api-key':getAnthropicKey(), 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' },
-      body: JSON.stringify({ model:'claude-sonnet-5-5', max_tokens:getMaxTokens(), messages:[{role:'user',content:prompt}] }),
+      body: JSON.stringify({ model:CLAUDE_MODEL, thinking:CLAUDE_THINKING, max_tokens:getMaxTokens(), messages:[{role:'user',content:prompt}] }),
       signal: ctrl.signal,
     });
   } catch(err) {
@@ -3040,7 +3049,14 @@ async function generateMinutes(transcript, stepCur, stepTotal) {
   if (!cr.ok) { const e=await cr.json().catch(()=>({})); throw new Error('Claude APIエラー: '+(e?.error?.message||cr.status)); }
   clearInterval(claudeTimer);
   const cd = await cr.json();
-  return { text: cd.content?.[0]?.text || '（生成失敗）', usage: cd.usage };
+  const _txt = extractClaudeText(cd);
+  if (!_txt) {
+    const why = cd.stop_reason === 'refusal' ? 'モデルが応答を拒否しました'
+              : cd.stop_reason === 'max_tokens' ? '最大トークン数に達しました（詳細設定で増やしてください）'
+              : '応答にテキストがありません';
+    throw new Error('Claude APIエラー: ' + why + '（stop_reason: ' + (cd.stop_reason || '不明') + '）');
+  }
+  return { text: _txt, usage: cd.usage };
 }
 
 // 完了処理（共通）
@@ -3081,7 +3097,8 @@ function finishProcessing(tStart, sizeMB, usedDeepgram, usage) {
             'anthropic-dangerous-direct-browser-access': 'true',
           },
           body: JSON.stringify({
-            model: 'claude-sonnet-5-5',
+            model: CLAUDE_MODEL,
+            thinking: CLAUDE_THINKING,
             max_tokens: 50,
             messages: [{
               role: 'user',
@@ -3091,7 +3108,7 @@ function finishProcessing(tStart, sizeMB, usedDeepgram, usage) {
         });
         if (res.ok) {
           const data = await res.json();
-          const topic = data.content?.[0]?.text?.trim() || '';
+          const topic = extractClaudeText(data);
           if (topic) topicEl.value = topic;
         }
       } catch(e) {}
@@ -3292,11 +3309,11 @@ async function sendChatMessage() {
     const cr = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type':'application/json', 'x-api-key':getAnthropicKey(), 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' },
-      body: JSON.stringify({ model:'claude-sonnet-5-5', max_tokens:2048, system: systemPrompt, messages }),
+      body: JSON.stringify({ model:CLAUDE_MODEL, thinking:CLAUDE_THINKING, max_tokens:2048, system: systemPrompt, messages }),
     });
     if (!cr.ok) { const e=await cr.json().catch(()=>({})); throw new Error('Claude APIエラー: '+(e?.error?.message||cr.status)); }
     const cd    = await cr.json();
-    const reply = cd.content?.[0]?.text || '（応答なし）';
+    const reply = extractClaudeText(cd) || '（応答なし）';
 
     state.chatHistory.push({ role: 'assistant', content: reply });
     loadingEl.remove();
@@ -3706,11 +3723,11 @@ ${state.minutes}
       const cr = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: { 'Content-Type':'application/json', 'x-api-key':getAnthropicKey(), 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' },
-        body: JSON.stringify({ model:'claude-sonnet-5-5', max_tokens: getMaxTokens(), messages:[{role:'user',content:prompt}] }),
+        body: JSON.stringify({ model:CLAUDE_MODEL, thinking:CLAUDE_THINKING, max_tokens: getMaxTokens(), messages:[{role:'user',content:prompt}] }),
       });
       if (!cr.ok) throw new Error('APIエラー');
       const cd = await cr.json();
-      const fixed = cd.content?.[0]?.text || '';
+      const fixed = extractClaudeText(cd);
       if (fixed) {
         state.minutes = fixed;
         document.getElementById('minutesResult').textContent = fixed;
