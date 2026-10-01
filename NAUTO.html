@@ -242,7 +242,7 @@
     <div class="header-catch">Less Writing.<br>More Talking.</div>
   </div>
   <div class="header-right">
-    <div class="header-version">v2.7.3</div>
+    <div class="header-version">v2.7.5</div>
     <div style="display:flex;gap:8px;">
       <div class="settings-btn" id="historyHeaderBtn" style="font-size:16px;">📚</div>
       <div class="settings-btn" id="helpBtn" style="font-size:15px;font-weight:700;">?</div>
@@ -3029,7 +3029,7 @@ async function generateMinutes(transcript, stepCur, stepTotal) {
     cr = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type':'application/json', 'x-api-key':getAnthropicKey(), 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' },
-      body: JSON.stringify({ model:'claude-sonnet-4-5', max_tokens:getMaxTokens(), messages:[{role:'user',content:prompt}] }),
+      body: JSON.stringify({ model:'claude-sonnet-5-5', max_tokens:getMaxTokens(), messages:[{role:'user',content:prompt}] }),
       signal: ctrl.signal,
     });
   } catch(err) {
@@ -3049,7 +3049,7 @@ function finishProcessing(tStart, sizeMB, usedDeepgram, usage) {
   const totalSec      = Math.round((Date.now() - tStart) / 1000);
   const inputTokens   = usage?.input_tokens  || 1500;
   const outputTokens  = usage?.output_tokens || 500;
-  const claudeCostUSD = (inputTokens * 3 + outputTokens * 15) / 1_000_000;
+  const claudeCostUSD = (inputTokens * 2 + outputTokens * 10) / 1_000_000;
   const claudeJPY     = Math.max(1, Math.round(claudeCostUSD * 155));
   const estAudioMin   = sizeMB * 125 / 60;
   const sttCostUSD    = usedDeepgram ? estAudioMin * 0.0043 : 0;
@@ -3081,7 +3081,7 @@ function finishProcessing(tStart, sizeMB, usedDeepgram, usage) {
             'anthropic-dangerous-direct-browser-access': 'true',
           },
           body: JSON.stringify({
-            model: 'claude-sonnet-4-5',
+            model: 'claude-sonnet-5-5',
             max_tokens: 50,
             messages: [{
               role: 'user',
@@ -3292,7 +3292,7 @@ async function sendChatMessage() {
     const cr = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type':'application/json', 'x-api-key':getAnthropicKey(), 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' },
-      body: JSON.stringify({ model:'claude-sonnet-4-5', max_tokens:2048, system: systemPrompt, messages }),
+      body: JSON.stringify({ model:'claude-sonnet-5-5', max_tokens:2048, system: systemPrompt, messages }),
     });
     if (!cr.ok) { const e=await cr.json().catch(()=>({})); throw new Error('Claude APIエラー: '+(e?.error?.message||cr.status)); }
     const cd    = await cr.json();
@@ -3706,7 +3706,7 @@ ${state.minutes}
       const cr = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: { 'Content-Type':'application/json', 'x-api-key':getAnthropicKey(), 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' },
-        body: JSON.stringify({ model:'claude-sonnet-4-5', max_tokens: getMaxTokens(), messages:[{role:'user',content:prompt}] }),
+        body: JSON.stringify({ model:'claude-sonnet-5-5', max_tokens: getMaxTokens(), messages:[{role:'user',content:prompt}] }),
       });
       if (!cr.ok) throw new Error('APIエラー');
       const cd = await cr.json();
