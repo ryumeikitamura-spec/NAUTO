@@ -242,7 +242,7 @@
     <div class="header-catch">Less Writing.<br>More Talking.</div>
   </div>
   <div class="header-right">
-    <div class="header-version">v2.8.1</div>
+    <div class="header-version">v2.9.0</div>
     <div style="display:flex;gap:8px;">
       <div class="settings-btn" id="historyHeaderBtn" style="font-size:16px;">📚</div>
       <div class="settings-btn" id="helpBtn" style="font-size:15px;font-weight:700;">?</div>
@@ -1076,6 +1076,7 @@ function extractClaudeText(cd) {
 }
 // 思考は議事録用途では不要。between_toolsで先頭思考をオフ（5.5では"disabled"は400エラー）
 const CLAUDE_MODEL    = 'claude-sonnet-5-5';
+const CLAUDE_API_URL  = 'https://api.anthropic.com/v1/messages';
 const CLAUDE_THINKING = { type: 'between_tools' };  // 議題生成・追質問用（事前思考なし）
 const DEFAULT_SYSTEM_PROMPT =
 `あなたは工作機械商社の営業担当を支える、議事録作成の専門アシスタントです。音声認識の文字起こしから、そのまま社内共有・メール送信できる完成した議事録を作成します。
@@ -1095,6 +1096,40 @@ const DEFAULT_SYSTEM_PROMPT =
 ・テンプレートの最初の行（【…】）から書き始め、前置き・後書き・確認依頼・注記は付けません。議事録本文だけを出力します。
 ・プレーンテキストで、見出しはテンプレートの「■」、箇条書きは「・」を使います（メールやチャットに貼り付けるため）。
 ・テンプレートにないセクションは追加しません。`;
+// Claude API呼び出し（全4か所で共通）。本文が空ならエラーにする。途中切れは truncated で返す
+//   effort  : 指定すると適応的思考＋思考の深さ（議事録生成・キーワード修正）
+//   thinking: 指定するとその思考設定（議題生成・チャットは CLAUDE_THINKING で事前思考なし）
+async function callClaude({ system, messages, maxTokens, effort, thinking, timeoutMs = 5 * 60 * 1000 }) {
+  const body = { model: CLAUDE_MODEL, max_tokens: maxTokens, messages };
+  if (system)   body.system = system;
+  if (effort)   body.output_config = { effort };
+  if (thinking) body.thinking = thinking;
+  const ctrl = new AbortController();
+  const tid  = setTimeout(() => ctrl.abort(), timeoutMs);
+  let cd;
+  try {
+    const res = await fetch(CLAUDE_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'x-api-key':getAnthropicKey(), 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' },
+      body: JSON.stringify(body),
+      signal: ctrl.signal,
+    });
+    if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error('Claude APIエラー: ' + (e?.error?.message || res.status)); }
+    cd = await res.json();
+  } catch (err) {
+    if (err.name === 'AbortError') throw new Error('タイムアウト：Claude APIからの応答がありません。');
+    throw err;
+  } finally { clearTimeout(tid); }
+  const text = extractClaudeText(cd);
+  if (!text) {
+    const why = cd.stop_reason === 'refusal'    ? 'モデルが応答を拒否しました'
+              : cd.stop_reason === 'max_tokens' ? '最大トークン数に達しました（詳細設定で増やしてください）'
+              : '応答にテキストがありません';
+    throw new Error('Claude APIエラー: ' + why + '（stop_reason: ' + (cd.stop_reason || '不明') + '）');
+  }
+  return { text, usage: cd.usage, stopReason: cd.stop_reason, truncated: cd.stop_reason === 'max_tokens' };
+}
+
 const MAX_TOKENS_STEPS = [8192, 12000, 16000];
 const EFFORT_STEPS     = ['medium', 'high', 'xhigh'];
 
@@ -1214,6 +1249,85 @@ const getGroqLanguage       = () => LS.get('groq_language') || 'ja'; // 未設�
 const getGroqTemperature    = () => parseFloat(LS.get('groq_temperature')) || 0;
 const getGroqSendWordMaster  = () => LS.get('groq_send_word_master')  !== 'false'; // デフォルトtrue
 const getGroqUseKeywordSet   = () => LS.get('groq_use_keyword_set')  !== 'false'; // デフォルトtrue
+
+// ─── 設定の一覧（ここに1行足せば、設定画面の表示・保存・バックアップに自動で反映される）───
+// type: text=入力欄（前後の空白を除いて保存）/ value=選択・数値（そのまま保存）/ check=チェックボックス / radio=ラジオボタン（elはname）
+const SETTINGS = [
+  { key: 'my_name',               el: 'settingMyName',       type: 'text',  get: getMyName },
+  { key: 'my_company',            el: 'settingMyCompany',    type: 'text',  get: getMyCompany },
+  { key: 'groq_key',              el: 'groqKey',             type: 'text',  get: getGroqKey },
+  { key: 'deepgram_key',          el: 'deepgramKey',         type: 'text',  get: getDeepgramKey },
+  { key: 'anthropic_key',         el: 'anthropicKey',        type: 'text',  get: getAnthropicKey },
+  { key: 'mail_to',               el: 'settingMailTo',       type: 'text',  get: getMailTo },
+  { key: 'stt_service',           el: 'sttService',          type: 'radio', get: getSttService },
+  { key: 'groq_fallback',         el: 'groqFallback',        type: 'radio', get: getGroqFallback },
+  { key: 'groq_coeff',            el: 'groqCoeff',           type: 'value', get: getGroqCoeff },
+  { key: 'deepgram_coeff',        el: 'deepgramCoeff',       type: 'value', get: getDeepgramCoeff },
+  { key: 'claude_coeff',          el: 'claudeCoeff',         type: 'value', get: getClaudeCoeff },
+  { key: 'max_tokens',            el: 'maxTokens',           type: 'value', get: getMaxTokens },
+  { key: 'claude_effort',         el: 'claudeEffort',        type: 'value', get: getClaudeEffort },
+  { key: 'claude_system_prompt',  el: 'claudeSystemPrompt',  type: 'text',  get: getClaudeSystemPrompt },
+  { key: 'groq_model',            el: 'groqModel',           type: 'value', get: getGroqModel },
+  { key: 'groq_language',         el: 'groqLanguage',        type: 'value', get: getGroqLanguage },
+  { key: 'groq_temperature',      el: 'groqTemperature',     type: 'value', get: getGroqTemperature },
+  { key: 'groq_send_word_master', el: 'groqSendWordMaster',  type: 'check', get: getGroqSendWordMaster },
+  { key: 'groq_use_keyword_set',  el: 'groqUseKeywordSet',   type: 'check', get: getGroqUseKeywordSet },
+  { key: 'diarize',               el: 'diarizeEnabled',      type: 'check', get: getDiarize },
+  { key: 'deepgram_model',        el: 'deepgramModel',       type: 'value', get: getDeepgramModel },
+  { key: 'deepgram_language',     el: 'deepgramLanguage',    type: 'value', get: getDeepgramLanguage },
+  { key: 'deepgram_smart_format', el: 'deepgramSmartFormat', type: 'check', get: getDeepgramSmartFormat },
+  { key: 'deepgram_send_keyterm', el: 'deepgramSendKeyterm', type: 'check', get: getDeepgramSendKeyterm },
+  { key: 'use_keyword_set',       el: 'useKeywordSet',       type: 'check', get: getUseKeywordSet },
+  { key: 'keep_awake',            el: 'keepAwakeOpt',        type: 'check', get: getKeepAwake },
+  { key: 'notify_sound',          el: 'notifySoundOpt',      type: 'check', get: getNotifySound },
+  { key: 'ref_file_size_limit',   el: 'refFileSizeLimit',    type: 'value', get: getRefFileSizeLimit },
+];
+// 保存値 → 設定画面
+function fillSettingsForm() {
+  SETTINGS.forEach(s => {
+    const v = s.get();
+    if (s.type === 'radio') {
+      const r = document.querySelector(`input[name="${s.el}"][value="${v}"]`);
+      if (r) r.checked = true;
+      return;
+    }
+    const el = document.getElementById(s.el);
+    if (!el) return;
+    if (s.type === 'check') el.checked = !!v;
+    else el.value = String(v);
+  });
+  const tv = document.getElementById('groqTemperatureVal');
+  if (tv) tv.textContent = getGroqTemperature();
+  updateGroqFallbackVisibility();
+}
+// 設定画面 → 保存
+function saveSettingsForm() {
+  SETTINGS.forEach(s => {
+    let v;
+    if (s.type === 'radio') {
+      v = document.querySelector(`input[name="${s.el}"]:checked`)?.value || s.get();
+    } else {
+      const el = document.getElementById(s.el);
+      if (!el) return;
+      v = s.type === 'check' ? (el.checked ? 'true' : 'false')
+        : s.type === 'text'  ? el.value.trim()
+        : el.value;
+    }
+    LS.set(s.key, v);
+  });
+}
+// バックアップ用：全設定を {key: 値} で返す
+function exportSettings() {
+  const out = {};
+  SETTINGS.forEach(s => { const v = s.get(); out[s.key] = s.type === 'check' ? (v ? 'true' : 'false') : v; });
+  return out;
+}
+// バックアップから復元（0や空欄も値として復元する）
+function importSettings(data) {
+  SETTINGS.forEach(s => {
+    if (data[s.key] !== undefined && data[s.key] !== null) LS.set(s.key, String(data[s.key]));
+  });
+}
 
 // ─── キーワードセット管理 ──────────────────────
 const KS_KEY = 'keyword_sets';
@@ -2009,38 +2123,10 @@ function getDateStamp() {
 document.getElementById('exportAllBtn').addEventListener('click', () => {
   const data = {
     type: 'nauto_backup_all',
-    version: '2.8.1',
+    version: '2.9.0',
     exported_at: new Date().toISOString(),
-    // 設定・APIキー
-    my_name:       getMyName(),
-    my_company:    getMyCompany(),
-    groq_key:      getGroqKey(),
-    deepgram_key:  getDeepgramKey(),
-    anthropic_key: getAnthropicKey(),
-    mail_to:       getMailTo(),
-    stt_service:   getSttService(),
-    groq_fallback: getGroqFallback(),
-    // 詳細設定
-    groq_coeff:           getGroqCoeff(),
-    deepgram_coeff:       getDeepgramCoeff(),
-    claude_coeff:         getClaudeCoeff(),
-    max_tokens:           getMaxTokens(),
-    claude_effort:        getClaudeEffort(),
-    claude_system_prompt: getClaudeSystemPrompt(),
-    groq_model:           getGroqModel(),
-    groq_language:        getGroqLanguage(),
-    groq_temperature:     getGroqTemperature(),
-    groq_send_word_master: getGroqSendWordMaster()  ? 'true' : 'false',
-    groq_use_keyword_set:  getGroqUseKeywordSet()   ? 'true' : 'false',
-    deepgram_model:       getDeepgramModel(),
-    deepgram_language:    getDeepgramLanguage(),
-    deepgram_smart_format:getDeepgramSmartFormat() ? 'true' : 'false',
-    deepgram_send_keyterm:getDeepgramSendKeyterm() ? 'true' : 'false',
-    use_keyword_set:      getUseKeywordSet()       ? 'true' : 'false',
-    keep_awake:           getKeepAwake()           ? 'true' : 'false',
-    notify_sound:         getNotifySound()         ? 'true' : 'false',
-    ref_file_size_limit:  String(getRefFileSizeLimit()),
-    diarize:              getDiarize() ? 'true' : 'false',
+    // 設定・APIキー・詳細設定（SETTINGSの一覧から自動）
+    ...exportSettings(),
     // データ
     templates:     getTemplates(),
     master_data:   LS.get('master_data'),
@@ -2063,14 +2149,8 @@ document.getElementById('importAllFile').addEventListener('change', e => {
   reader.onload = ev => {
     try {
       const data = JSON.parse(ev.target.result);
-      // 設定・APIキー（0や空欄も値として復元する）
-      const has = k => data[k] !== undefined && data[k] !== null;
-      ['my_name','my_company','groq_key','deepgram_key','anthropic_key','mail_to','stt_service','groq_fallback',
-       'groq_coeff','deepgram_coeff','claude_coeff','max_tokens','claude_effort','claude_system_prompt',
-       'groq_model','groq_language','groq_temperature','groq_send_word_master','groq_use_keyword_set',
-       'deepgram_model','deepgram_language','deepgram_smart_format','deepgram_send_keyterm','diarize',
-       'use_keyword_set','keep_awake','notify_sound','ref_file_size_limit']
-        .forEach(k => { if (has(k)) LS.set(k, String(data[k])); });
+      // 設定・APIキー・詳細設定（SETTINGSの一覧から自動）
+      importSettings(data);
       // データ
       if (data.templates)     saveTemplates(data.templates);
       if (data.master_data)   LS.set('master_data',    data.master_data);
@@ -2079,39 +2159,7 @@ document.getElementById('importAllFile').addEventListener('change', e => {
       if (data.common_word_sets) LS.set('common_word_sets', data.common_word_sets);
       if (data.minutes_history)  LS.set(HISTORY_KEY,        data.minutes_history);
       // 画面更新
-      document.getElementById('settingMyName').value    = getMyName();
-      document.getElementById('settingMyCompany').value = getMyCompany();
-      document.getElementById('groqKey').value          = getGroqKey();
-      document.getElementById('deepgramKey').value      = getDeepgramKey();
-      document.getElementById('anthropicKey').value     = getAnthropicKey();
-      document.getElementById('settingMailTo').value    = getMailTo();
-      // 詳細設定
-      document.getElementById('groqCoeff').value            = getGroqCoeff();
-      document.getElementById('deepgramCoeff').value         = getDeepgramCoeff();
-      document.getElementById('claudeCoeff').value           = getClaudeCoeff();
-      document.getElementById('maxTokens').value             = getMaxTokens();
-      document.getElementById('claudeEffort').value          = getClaudeEffort();
-      document.getElementById('claudeSystemPrompt').value    = getClaudeSystemPrompt();
-      document.getElementById('groqModel').value             = getGroqModel();
-      document.getElementById('groqLanguage').value          = getGroqLanguage();
-      document.getElementById('groqTemperature').value       = getGroqTemperature();
-      document.getElementById('groqTemperatureVal').textContent = getGroqTemperature();
-      document.getElementById('groqSendWordMaster').checked  = getGroqSendWordMaster();
-      document.getElementById('deepgramModel').value         = getDeepgramModel();
-      document.getElementById('deepgramLanguage').value      = getDeepgramLanguage();
-      document.getElementById('deepgramSmartFormat').checked = getDeepgramSmartFormat();
-      document.getElementById('deepgramSendKeyterm').checked = getDeepgramSendKeyterm();
-      document.getElementById('useKeywordSet').checked       = getUseKeywordSet();
-      document.getElementById('groqUseKeywordSet').checked   = getGroqUseKeywordSet();
-      document.getElementById('keepAwakeOpt').checked        = getKeepAwake();
-      document.getElementById('notifySoundOpt').checked      = getNotifySound();
-      document.getElementById('refFileSizeLimit').value      = getRefFileSizeLimit();
-      document.getElementById('diarizeEnabled').checked      = getDiarize();
-      const svc = getSttService();
-      document.querySelector(`input[name="sttService"][value="${svc}"]`).checked = true;
-      const fb  = getGroqFallback();
-      document.querySelector(`input[name="groqFallback"][value="${fb}"]`).checked = true;
-      updateGroqFallbackVisibility();
+      fillSettingsForm();
       renderTemplateList(); updateTemplateSelect();
       renderMasterList();
       updateMemberSelf(); updateApiStatus(); updateStartBtn();
@@ -2719,45 +2767,10 @@ function clearError(id) {
 // ─── モーダル ────────────────────────────────
 function openModal() {
   try {
-    document.getElementById('settingMyName').value    = getMyName();
-    document.getElementById('settingMyCompany').value = getMyCompany();
-    document.getElementById('groqKey').value          = getGroqKey();
-    document.getElementById('deepgramKey').value      = getDeepgramKey();
-    document.getElementById('anthropicKey').value     = getAnthropicKey();
-    document.getElementById('settingMailTo').value    = getMailTo();
-    document.getElementById('groqCoeff').value            = getGroqCoeff();
-    document.getElementById('deepgramCoeff').value        = getDeepgramCoeff();
-    document.getElementById('claudeCoeff').value          = getClaudeCoeff();
-    document.getElementById('maxTokens').value            = getMaxTokens();
-    document.getElementById('claudeEffort').value         = getClaudeEffort();
-    document.getElementById('claudeSystemPrompt').value   = getClaudeSystemPrompt();
+    fillSettingsForm();
     document.getElementById('claudeSystemPrompt').placeholder = DEFAULT_SYSTEM_PROMPT;
-    document.getElementById('groqModel').value            = getGroqModel();
-    document.getElementById('groqLanguage').value         = getGroqLanguage();
-    document.getElementById('groqTemperature').value      = getGroqTemperature();
-    document.getElementById('groqTemperatureVal').textContent = getGroqTemperature();
     renderCommonWordSetList();
     updateCommonWordSetSelect();
-    document.getElementById('groqSendWordMaster').checked = getGroqSendWordMaster();
-
-    // サービス選択を復元
-    const svc = getSttService();
-    const svcRadio = document.querySelector(`input[name="sttService"][value="${svc}"]`);
-    if (svcRadio) svcRadio.checked = true;
-    const fb = getGroqFallback();
-    const fbRadio = document.querySelector(`input[name="groqFallback"][value="${fb}"]`);
-    if (fbRadio) fbRadio.checked = true;
-    document.getElementById('diarizeEnabled').checked      = getDiarize();
-    document.getElementById('deepgramModel').value         = getDeepgramModel();
-    document.getElementById('deepgramLanguage').value      = getDeepgramLanguage();
-    document.getElementById('deepgramSmartFormat').checked = getDeepgramSmartFormat();
-    document.getElementById('deepgramSendKeyterm').checked = getDeepgramSendKeyterm();
-    document.getElementById('groqUseKeywordSet').checked   = getGroqUseKeywordSet();
-    document.getElementById('useKeywordSet').checked       = getUseKeywordSet();
-    document.getElementById('keepAwakeOpt').checked        = getKeepAwake();
-    document.getElementById('notifySoundOpt').checked      = getNotifySound();
-    document.getElementById('refFileSizeLimit').value      = String(getRefFileSizeLimit());
-    updateGroqFallbackVisibility();
 
     renderTemplateList();
     resetEditor();
@@ -2801,34 +2814,7 @@ document.getElementById('modalOverlay').addEventListener('click', e => {
   if (e.target === document.getElementById('modalOverlay')) closeModal();
 });
 document.getElementById('saveSettings').addEventListener('click',()=>{
-  LS.set('my_name',        document.getElementById('settingMyName').value.trim());
-  LS.set('my_company',     document.getElementById('settingMyCompany').value.trim());
-  LS.set('groq_key',       document.getElementById('groqKey').value.trim());
-  LS.set('deepgram_key',   document.getElementById('deepgramKey').value.trim());
-  LS.set('anthropic_key',  document.getElementById('anthropicKey').value.trim());
-  LS.set('mail_to',        document.getElementById('settingMailTo').value.trim());
-  LS.set('groq_coeff',           document.getElementById('groqCoeff').value);
-  LS.set('deepgram_coeff',       document.getElementById('deepgramCoeff').value);
-  LS.set('claude_coeff',         document.getElementById('claudeCoeff').value);
-  LS.set('max_tokens',           document.getElementById('maxTokens').value);
-  LS.set('claude_effort',        document.getElementById('claudeEffort').value);
-  LS.set('claude_system_prompt', document.getElementById('claudeSystemPrompt').value.trim());
-  LS.set('groq_model',           document.getElementById('groqModel').value);
-  LS.set('groq_language',        document.getElementById('groqLanguage').value.trim());
-  LS.set('groq_temperature',     document.getElementById('groqTemperature').value);
-  LS.set('groq_send_word_master', document.getElementById('groqSendWordMaster').checked  ? 'true' : 'false');
-  LS.set('groq_use_keyword_set',  document.getElementById('groqUseKeywordSet').checked   ? 'true' : 'false');
-  LS.set('stt_service',    document.querySelector('input[name="sttService"]:checked')?.value || 'groq');
-  LS.set('groq_fallback',  document.querySelector('input[name="groqFallback"]:checked')?.value || 'deepgram');
-  LS.set('diarize',              document.getElementById('diarizeEnabled').checked ? 'true' : 'false');
-  LS.set('deepgram_model',       document.getElementById('deepgramModel').value);
-  LS.set('deepgram_language',    document.getElementById('deepgramLanguage').value);
-  LS.set('deepgram_smart_format',document.getElementById('deepgramSmartFormat').checked ? 'true' : 'false');
-  LS.set('deepgram_send_keyterm',document.getElementById('deepgramSendKeyterm').checked ? 'true' : 'false');
-  LS.set('use_keyword_set',      document.getElementById('useKeywordSet').checked       ? 'true' : 'false');
-  LS.set('keep_awake',           document.getElementById('keepAwakeOpt').checked        ? 'true' : 'false');
-  LS.set('notify_sound',         document.getElementById('notifySoundOpt').checked      ? 'true' : 'false');
-  LS.set('ref_file_size_limit',  document.getElementById('refFileSizeLimit').value);
+  saveSettingsForm();
   closeModal(); updateMemberSelf(); updateApiStatus(); updateStartBtn();
   showToast('設定を保存しました');
 });
@@ -3121,32 +3107,11 @@ async function generateMinutes(transcript, stepCur, stepTotal) {
     `<transcript>\n${transcript}\n</transcript>\n\n` +
     `<template>\n${tpl.prompt}\n</template>\n\n` +
     `上記の<transcript>をもとに、<template>の形式で議事録を完成させてください。`;
-  const ctrl = new AbortController();
-  const tid  = setTimeout(() => ctrl.abort(), 5 * 60 * 1000);
-  let cr;
+  let r;
   try {
-    cr = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type':'application/json', 'x-api-key':getAnthropicKey(), 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' },
-      body: JSON.stringify({ model:CLAUDE_MODEL, max_tokens:getMaxTokens(), output_config:{ effort:getClaudeEffort() }, system: systemInstruction, messages:[{role:'user',content:prompt}] }),
-      signal: ctrl.signal,
-    });
-  } catch(err) {
-    clearInterval(claudeTimer);
-    if (err.name === 'AbortError') throw new Error('タイムアウト：Claude APIからの応答がありません。');
-    throw err;
-  } finally { clearTimeout(tid); }
-  clearInterval(claudeTimer);
-  if (!cr.ok) { const e=await cr.json().catch(()=>({})); throw new Error('Claude APIエラー: '+(e?.error?.message||cr.status)); }
-  const cd = await cr.json();
-  const _txt = extractClaudeText(cd);
-  if (!_txt) {
-    const why = cd.stop_reason === 'refusal' ? 'モデルが応答を拒否しました'
-              : cd.stop_reason === 'max_tokens' ? '最大トークン数に達しました（詳細設定で増やしてください）'
-              : '応答にテキストがありません';
-    throw new Error('Claude APIエラー: ' + why + '（stop_reason: ' + (cd.stop_reason || '不明') + '）');
-  }
-  return { text: _txt, usage: cd.usage, truncated: cd.stop_reason === 'max_tokens' };
+    r = await callClaude({ system: systemInstruction, messages: [{ role:'user', content: prompt }], maxTokens: getMaxTokens(), effort: getClaudeEffort() });
+  } finally { clearInterval(claudeTimer); }
+  return { text: r.text, usage: r.usage, truncated: r.truncated };
 }
 
 // 完了処理（共通）
@@ -3180,34 +3145,13 @@ function finishProcessing(tStart, sizeMB, usedDeepgram, usage, truncated) {
     // 議題が空の場合、議事録から自動生成
     const topicEl = document.getElementById('meetingTopic');
     if (!topicEl.value.trim()) {
-      const tctrl = new AbortController();
-      const ttid  = setTimeout(() => tctrl.abort(), 20 * 1000); // 議題生成で止まらないよう20秒で打ち切り
       try {
-        const res = await fetch('https://api.anthropic.com/v1/messages', {
-          signal: tctrl.signal,
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': getAnthropicKey(),
-            'anthropic-version': '2023-06-01',
-            'anthropic-dangerous-direct-browser-access': 'true',
-          },
-          body: JSON.stringify({
-            model: CLAUDE_MODEL,
-            thinking: CLAUDE_THINKING,
-            max_tokens: 100,
-            messages: [{
-              role: 'user',
-              content: `以下の議事録の内容から、議題を10〜20文字以内の簡潔な日本語で1つだけ生成してください。記号・句読点は不要です。議題のテキストのみ出力してください。\n\n${state.minutes.slice(0, 2000)}`
-            }]
-          })
+        const r = await callClaude({
+          thinking: CLAUDE_THINKING, maxTokens: 100, timeoutMs: 20 * 1000, // 議題生成で止まらないよう20秒で打ち切り
+          messages: [{ role: 'user', content: `以下の議事録の内容から、議題を10〜20文字以内の簡潔な日本語で1つだけ生成してください。記号・句読点は不要です。議題のテキストのみ出力してください。\n\n${state.minutes.slice(0, 2000)}` }],
         });
-        if (res.ok) {
-          const data = await res.json();
-          const topic = extractClaudeText(data);
-          if (topic) topicEl.value = topic.replace(/[\r\n「」『』"']/g, '').slice(0, 30);
-        }
-      } catch(e) {} finally { clearTimeout(ttid); }
+        topicEl.value = r.text.replace(/[\r\n「」『』"']/g, '').slice(0, 30);
+      } catch(e) {}
     }
 
     // 以降で例外が出ても結果画面には必ず進む
@@ -3489,20 +3433,13 @@ async function sendChatMessage() {
 
     const messages = state.chatHistory.map(m => ({ role: m.role, content: m.content }));
 
-    const cr = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type':'application/json', 'x-api-key':getAnthropicKey(), 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' },
-      body: JSON.stringify({ model:CLAUDE_MODEL, thinking:CLAUDE_THINKING, max_tokens:2048, system: systemPrompt, messages }),
-    });
-    if (!cr.ok) { const e=await cr.json().catch(()=>({})); throw new Error('Claude APIエラー: '+(e?.error?.message||cr.status)); }
-    const cd    = await cr.json();
-    const reply = extractClaudeText(cd);
-    if (!reply) throw new Error('応答にテキストがありません（stop_reason: ' + (cd.stop_reason || '不明') + '）');
+    const r = await callClaude({ system: systemPrompt, messages, maxTokens: 2048, thinking: CLAUDE_THINKING, timeoutMs: 3 * 60 * 1000 });
+    const reply = r.text;
 
     state.chatHistory.push({ role: 'assistant', content: reply });
     loadingEl.remove();
-    addChatBubble('assistant', reply, cd.stop_reason === 'max_tokens');
-    if (cd.stop_reason === 'max_tokens') showToast('応答が途中で切れたため「反映」は無効にしました');
+    addChatBubble('assistant', reply, r.truncated);
+    if (r.truncated) showToast('応答が途中で切れたため「反映」は無効にしました');
 
   } catch(err) {
     loadingEl.remove();
@@ -3909,23 +3846,13 @@ ${state.minutes}
 ・文脈からその語を指していると判断できる箇所だけ直します。判断できない箇所は変えません。
 ・語の置き換え以外の変更（内容の追加・削除、言い回しや構成・改行の変更）はしません。
 ・プレーンテキストのまま、修正後の議事録の全文だけを出力します（前置き・注記は付けません）。`;
-      const cr = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type':'application/json', 'x-api-key':getAnthropicKey(), 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' },
-        body: JSON.stringify({ model:CLAUDE_MODEL, max_tokens: getMaxTokens(), output_config:{ effort:getClaudeEffort() }, messages:[{role:'user',content:prompt}] }),
-      });
-      if (!cr.ok) { const e = await cr.json().catch(() => ({})); throw new Error('APIエラー ' + (e?.error?.message || cr.status)); }
-      const cd = await cr.json();
-      const fixed = extractClaudeText(cd);
-      if (cd.stop_reason === 'max_tokens') throw new Error('出力が上限で途中切れのため反映しませんでした（最大トークン数を増やしてください）');
-      if (!fixed) throw new Error('応答にテキストがありません（stop_reason: ' + (cd.stop_reason || '不明') + '）');
-      {
-        state.minutes = fixed;
-        document.getElementById('minutesResult').textContent = fixed;
-        document.getElementById('minutesEdit').value = fixed;
-        showToast('議事録を修正しました');
-        btn.style.display = 'none';
-      }
+      const r = await callClaude({ messages: [{ role:'user', content: prompt }], maxTokens: getMaxTokens(), effort: getClaudeEffort() });
+      if (r.truncated) throw new Error('出力が上限で途中切れのため反映しませんでした（最大トークン数を増やしてください）');
+      state.minutes = r.text;
+      document.getElementById('minutesResult').textContent = r.text;
+      document.getElementById('minutesEdit').value = r.text;
+      showToast('議事録を修正しました');
+      btn.style.display = 'none';
     } catch(err) {
       showToast('修正に失敗しました: ' + err.message);
     } finally {
