@@ -242,7 +242,7 @@
     <div class="header-catch">Less Writing.<br>More Talking.</div>
   </div>
   <div class="header-right">
-    <div class="header-version">v2.8.0</div>
+    <div class="header-version">v2.8.1</div>
     <div style="display:flex;gap:8px;">
       <div class="settings-btn" id="historyHeaderBtn" style="font-size:16px;">📚</div>
       <div class="settings-btn" id="helpBtn" style="font-size:15px;font-weight:700;">?</div>
@@ -443,7 +443,7 @@
     </div>
 
     <!-- 単語登録エリア -->
-    <div id="keywordRegisterArea" style="display:none;background:var(--surface2);border:1.5px solid var(--accent2);border-radius:var(--radius);padding:14px 16px;display:none;flex-direction:column;gap:10px;">
+    <div id="keywordRegisterArea" style="background:var(--surface2);border:1.5px solid var(--accent2);border-radius:var(--radius);padding:14px 16px;display:none;flex-direction:column;gap:10px;">
       <div style="font-size:13px;font-weight:700;color:var(--accent2);">🔑 単語をキーワードセットに登録</div>
       <div style="font-size:12px;color:var(--text-muted);">登録した単語は次回からDeepgramに優先送信されます（初回スコア +3）</div>
       <div style="display:flex;gap:8px;align-items:center;">
@@ -901,7 +901,7 @@
           <select id="groqLanguage" style="padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;background:var(--surface);color:var(--text);">
             <option value="ja">🇯🇵 日本語</option>
             <option value="en">🇺🇸 英語</option>
-            <option value="">🌐 自動検出</option>
+            <option value="auto">🌐 自動検出</option>
           </select>
         </div>
 
@@ -1048,7 +1048,7 @@
     <details class="modal-details">
       <summary><span>💾 バックアップ</span></summary>
       <div style="margin-top:8px;">
-        <div style="font-size:12px;color:var(--text-muted);line-height:1.6;margin-bottom:4px;">APIキー・設定・テンプレート・参加者マスタ・単語マスタをすべて1ファイルで保存・復元します。</div>
+        <div style="font-size:12px;color:var(--text-muted);line-height:1.6;margin-bottom:4px;">APIキー・設定・テンプレート・参加者マスタ・単語マスタ・議事録履歴をすべて1ファイルで保存・復元します。</div>
         <div class="backup-row">
           <button class="btn btn-secondary" id="exportAllBtn">📤 一括<br>エクスポート</button>
           <button class="btn btn-secondary" id="importAllBtn">📥 一括<br>インポート</button>
@@ -1067,6 +1067,10 @@
 <script>
 // ─── Claude API共通 ───────────────────────────
 // Sonnet 5.5は応答先頭がthinkingブロックになり得るため、type==='text'を連結して取り出す
+// HTMLエスケープ（innerHTMLに文字列を埋め込むとき用）
+function escapeHtml(v) {
+  return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
 function extractClaudeText(cd) {
   return (cd?.content || []).filter(b => b.type === 'text').map(b => b.text || '').join('').trim();
 }
@@ -1206,7 +1210,7 @@ const getMaxTokens          = () => { const v = parseInt(LS.get('max_tokens')) |
 const getClaudeEffort       = () => { const v = LS.get('claude_effort'); return EFFORT_STEPS.includes(v) ? v : 'medium'; };
 const getClaudeSystemPrompt = () => LS.get('claude_system_prompt') || '';
 const getGroqModel          = () => LS.get('groq_model')    || 'whisper-large-v3';
-const getGroqLanguage       = () => LS.get('groq_language') ?? 'ja';
+const getGroqLanguage       = () => LS.get('groq_language') || 'ja'; // 未設定・旧版の空欄=ja、自動検出は'auto'
 const getGroqTemperature    = () => parseFloat(LS.get('groq_temperature')) || 0;
 const getGroqSendWordMaster  = () => LS.get('groq_send_word_master')  !== 'false'; // デフォルトtrue
 const getGroqUseKeywordSet   = () => LS.get('groq_use_keyword_set')  !== 'false'; // デフォルトtrue
@@ -1321,7 +1325,7 @@ function renderKeywordSetList() {
       const nameEl = document.createElement('div');
       nameEl.style.cssText = 'flex:1;font-size:13px;color:var(--text);';
       const tokenInfo = calcSetTokenInfo(entry.company, set.id);
-      nameEl.innerHTML = `<span style="font-weight:600;">${set.name}</span><br><span style="font-size:11px;color:var(--text-muted);">${tokenInfo}</span>`;
+      nameEl.innerHTML = `<span style="font-weight:600;">${escapeHtml(set.name)}</span><br><span style="font-size:11px;color:var(--text-muted);">${escapeHtml(tokenInfo)}</span>`;
       const editBtn = document.createElement('button');
       editBtn.className = 'btn btn-secondary btn-sm';
       editBtn.textContent = '編集';
@@ -1858,7 +1862,7 @@ function renderCommonWordSetList() {
     row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;background:var(--surface2);border:1px solid var(--border);';
     const nameEl = document.createElement('div');
     nameEl.style.cssText = 'flex:1;font-size:13px;';
-    nameEl.innerHTML = `<span style="font-weight:600;">${set.name}</span><br><span style="font-size:11px;color:var(--text-muted);">${set.words.length}語</span>`;
+    nameEl.innerHTML = `<span style="font-weight:600;">${escapeHtml(set.name)}</span><br><span style="font-size:11px;color:var(--text-muted);">${set.words.length}語</span>`;
     const editBtn = document.createElement('button');
     editBtn.className = 'btn btn-secondary btn-sm';
     editBtn.textContent = '編集';
@@ -2005,7 +2009,7 @@ function getDateStamp() {
 document.getElementById('exportAllBtn').addEventListener('click', () => {
   const data = {
     type: 'nauto_backup_all',
-    version: '1.9.3',
+    version: '2.8.1',
     exported_at: new Date().toISOString(),
     // 設定・APIキー
     my_name:       getMyName(),
@@ -2043,6 +2047,7 @@ document.getElementById('exportAllBtn').addEventListener('click', () => {
     word_master:   getWordMaster(),
     keyword_sets:  LS.get('keyword_sets') || '[]',
     common_word_sets: LS.get('common_word_sets') || '{"sets":[],"selected_id":null}',
+    minutes_history:  LS.get(HISTORY_KEY) || '[]',
   };
   downloadJson(data, 'NAUTO BACKUP ' + getDateStamp() + '.json');
   showToast('一括エクスポートしました');
@@ -2058,40 +2063,21 @@ document.getElementById('importAllFile').addEventListener('change', e => {
   reader.onload = ev => {
     try {
       const data = JSON.parse(ev.target.result);
-      // 設定・APIキー
-      if (data.my_name)       LS.set('my_name',       data.my_name);
-      if (data.my_company)    LS.set('my_company',    data.my_company);
-      if (data.groq_key)      LS.set('groq_key',       data.groq_key);
-      if (data.deepgram_key)  LS.set('deepgram_key',   data.deepgram_key);
-      if (data.anthropic_key) LS.set('anthropic_key',  data.anthropic_key);
-      if (data.mail_to)       LS.set('mail_to',        data.mail_to);
-      if (data.stt_service)   LS.set('stt_service',    data.stt_service);
-      if (data.groq_fallback) LS.set('groq_fallback',  data.groq_fallback);
-      if (data.groq_coeff)           LS.set('groq_coeff',           data.groq_coeff);
-      if (data.deepgram_coeff)       LS.set('deepgram_coeff',       data.deepgram_coeff);
-      if (data.claude_coeff)         LS.set('claude_coeff',         data.claude_coeff);
-      if (data.max_tokens)           LS.set('max_tokens',           data.max_tokens);
-      if (data.claude_effort)        LS.set('claude_effort',        data.claude_effort);
-      if (data.claude_system_prompt) LS.set('claude_system_prompt', data.claude_system_prompt);
-      if (data.groq_model)            LS.set('groq_model',            data.groq_model);
-      if (data.groq_language)         LS.set('groq_language',         data.groq_language);
-      if (data.groq_temperature)      LS.set('groq_temperature',      data.groq_temperature);
-      if (data.groq_send_word_master) LS.set('groq_send_word_master', data.groq_send_word_master);
-      if (data.groq_use_keyword_set)  LS.set('groq_use_keyword_set',  data.groq_use_keyword_set);
-      if (data.deepgram_model)        LS.set('deepgram_model',        data.deepgram_model);
-      if (data.deepgram_language)     LS.set('deepgram_language',     data.deepgram_language);
-      if (data.deepgram_smart_format) LS.set('deepgram_smart_format', data.deepgram_smart_format);
-      if (data.deepgram_send_keyterm) LS.set('deepgram_send_keyterm', data.deepgram_send_keyterm);
-      if (data.use_keyword_set)       LS.set('use_keyword_set',       data.use_keyword_set);
-      if (data.keep_awake)            LS.set('keep_awake',            data.keep_awake);
-      if (data.notify_sound)          LS.set('notify_sound',          data.notify_sound);
-      if (data.ref_file_size_limit)   LS.set('ref_file_size_limit',   data.ref_file_size_limit);
+      // 設定・APIキー（0や空欄も値として復元する）
+      const has = k => data[k] !== undefined && data[k] !== null;
+      ['my_name','my_company','groq_key','deepgram_key','anthropic_key','mail_to','stt_service','groq_fallback',
+       'groq_coeff','deepgram_coeff','claude_coeff','max_tokens','claude_effort','claude_system_prompt',
+       'groq_model','groq_language','groq_temperature','groq_send_word_master','groq_use_keyword_set',
+       'deepgram_model','deepgram_language','deepgram_smart_format','deepgram_send_keyterm','diarize',
+       'use_keyword_set','keep_awake','notify_sound','ref_file_size_limit']
+        .forEach(k => { if (has(k)) LS.set(k, String(data[k])); });
       // データ
       if (data.templates)     saveTemplates(data.templates);
       if (data.master_data)   LS.set('master_data',    data.master_data);
       if (data.word_master)   LS.set('word_master',    data.word_master);
       if (data.keyword_sets)     LS.set('keyword_sets',        data.keyword_sets);
       if (data.common_word_sets) LS.set('common_word_sets', data.common_word_sets);
+      if (data.minutes_history)  LS.set(HISTORY_KEY,        data.minutes_history);
       // 画面更新
       document.getElementById('settingMyName').value    = getMyName();
       document.getElementById('settingMyCompany').value = getMyCompany();
@@ -2116,6 +2102,7 @@ document.getElementById('importAllFile').addEventListener('change', e => {
       document.getElementById('deepgramSmartFormat').checked = getDeepgramSmartFormat();
       document.getElementById('deepgramSendKeyterm').checked = getDeepgramSendKeyterm();
       document.getElementById('useKeywordSet').checked       = getUseKeywordSet();
+      document.getElementById('groqUseKeywordSet').checked   = getGroqUseKeywordSet();
       document.getElementById('keepAwakeOpt').checked        = getKeepAwake();
       document.getElementById('notifySoundOpt').checked      = getNotifySound();
       document.getElementById('refFileSizeLimit').value      = getRefFileSizeLimit();
@@ -2197,9 +2184,6 @@ function getMeetingDatetime() {
 }
 
 // ─── 参加者 ──────────────────────────────────
-function updateMemberSelf() {
-  // 自社の固定名はgetMembersText()内で自動追加
-}
 // ─── あいうえおABC123順ソート ────────────────────
 function naturalSort(a, b) {
   return a.localeCompare(b, 'ja', { sensitivity: 'base', numeric: true });
@@ -2721,7 +2705,7 @@ function showError(id, msg) {
   const fix = getErrorFix(cleanMsg);
   el.innerHTML = `
     <div class="error-card">
-      <div class="error-card-title">⚠️ ${cleanMsg}</div>
+      <div class="error-card-title">⚠️ ${escapeHtml(cleanMsg)}</div>
       <div class="error-card-fix">📌 ${fix}</div>
     </div>`;
   el.classList.add('visible');
@@ -2768,6 +2752,11 @@ function openModal() {
     document.getElementById('deepgramLanguage').value      = getDeepgramLanguage();
     document.getElementById('deepgramSmartFormat').checked = getDeepgramSmartFormat();
     document.getElementById('deepgramSendKeyterm').checked = getDeepgramSendKeyterm();
+    document.getElementById('groqUseKeywordSet').checked   = getGroqUseKeywordSet();
+    document.getElementById('useKeywordSet').checked       = getUseKeywordSet();
+    document.getElementById('keepAwakeOpt').checked        = getKeepAwake();
+    document.getElementById('notifySoundOpt').checked      = getNotifySound();
+    document.getElementById('refFileSizeLimit').value      = String(getRefFileSizeLimit());
     updateGroqFallbackVisibility();
 
     renderTemplateList();
@@ -2898,11 +2887,10 @@ async function transcribeBlob(blob, filename) {
   const formData = new FormData();
   formData.append('file', blob, filename);
   formData.append('model', getGroqModel());
-  formData.append('language', 'ja');
   formData.append('response_format', 'text');
-  // language設定（空白=自動検出）
+  // language設定（'auto'=自動検出のため送らない）
   const lang = getGroqLanguage().trim();
-  if (lang) formData.append('language', lang);
+  if (lang && lang !== 'auto') formData.append('language', lang);
   // temperature
   formData.append('temperature', getGroqTemperature());
 
@@ -3027,11 +3015,11 @@ async function transcribeWithDeepgram(file) {
   if (getUseKeywordSet() && selectedKeywordSetId && selectedKeywordCompany) {
     keytermWords = getKeytermWords(selectedKeywordCompany, selectedKeywordSetId);
   }
-  if (keytermWords.length === 0 && getDeepgramSendKeyterm()) {
-    // 共通単語マスタからフォールバック（トークン500以内に収める）
-    const allWords = getCommonWords();
-    let tokens = 0;
-    for (const w of allWords) {
+  if (getDeepgramSendKeyterm()) {
+    // 商談単語マスタの不足分を共通単語マスタで補う（合計トークン500以内）
+    let tokens = keytermWords.reduce((sum, w) => sum + estimateTokens(w), 0);
+    for (const w of getCommonWords()) {
+      if (keytermWords.includes(w)) continue;
       const t = estimateTokens(w);
       if (tokens + t > 500) break;
       keytermWords.push(w);
@@ -3148,8 +3136,8 @@ async function generateMinutes(transcript, stepCur, stepTotal) {
     if (err.name === 'AbortError') throw new Error('タイムアウト：Claude APIからの応答がありません。');
     throw err;
   } finally { clearTimeout(tid); }
-  if (!cr.ok) { const e=await cr.json().catch(()=>({})); throw new Error('Claude APIエラー: '+(e?.error?.message||cr.status)); }
   clearInterval(claudeTimer);
+  if (!cr.ok) { const e=await cr.json().catch(()=>({})); throw new Error('Claude APIエラー: '+(e?.error?.message||cr.status)); }
   const cd = await cr.json();
   const _txt = extractClaudeText(cd);
   if (!_txt) {
@@ -3158,11 +3146,11 @@ async function generateMinutes(transcript, stepCur, stepTotal) {
               : '応答にテキストがありません';
     throw new Error('Claude APIエラー: ' + why + '（stop_reason: ' + (cd.stop_reason || '不明') + '）');
   }
-  return { text: _txt, usage: cd.usage };
+  return { text: _txt, usage: cd.usage, truncated: cd.stop_reason === 'max_tokens' };
 }
 
 // 完了処理（共通）
-function finishProcessing(tStart, sizeMB, usedDeepgram, usage) {
+function finishProcessing(tStart, sizeMB, usedDeepgram, usage, truncated) {
   Busy.end(true);
   setProgress(100, '✅ 完了！', '', 2, 2);
   const totalSec      = Math.round((Date.now() - tStart) / 1000);
@@ -3179,7 +3167,9 @@ function finishProcessing(tStart, sizeMB, usedDeepgram, usage) {
     `<span class="tag ok">⏱ ${totalSec}秒</span>` +
     `<span class="tag ${usedDeepgram?'warn':'ok'}">${sttLabel}</span>` +
     `<span class="tag ok">Claude: 約${claudeJPY}円</span>` +
-    `<span class="tag ok">合計: ${totalJPY<=1?'〜1円':'約'+totalJPY+'円'}</span>`;
+    `<span class="tag ok">合計: ${totalJPY<=1?'〜1円':'約'+totalJPY+'円'}</span>` +
+    (truncated ? `<span class="tag bad">⚠️ 出力が上限で途中切れ（詳細設定で最大トークン数を増やして再生成）</span>` : '');
+  if (truncated) setTimeout(() => showToast('議事録が途中で切れています。最大トークン数を増やしてください'), 500);
   setTimeout(async () => {
     document.getElementById('minutesResult').textContent    = state.minutes;
     document.getElementById('minutesEdit').value            = state.minutes;
@@ -3190,8 +3180,11 @@ function finishProcessing(tStart, sizeMB, usedDeepgram, usage) {
     // 議題が空の場合、議事録から自動生成
     const topicEl = document.getElementById('meetingTopic');
     if (!topicEl.value.trim()) {
+      const tctrl = new AbortController();
+      const ttid  = setTimeout(() => tctrl.abort(), 20 * 1000); // 議題生成で止まらないよう20秒で打ち切り
       try {
         const res = await fetch('https://api.anthropic.com/v1/messages', {
+          signal: tctrl.signal,
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -3214,19 +3207,22 @@ function finishProcessing(tStart, sizeMB, usedDeepgram, usage) {
           const topic = extractClaudeText(data);
           if (topic) topicEl.value = topic.replace(/[\r\n「」『』"']/g, '').slice(0, 30);
         }
-      } catch(e) {}
+      } catch(e) {} finally { clearTimeout(ttid); }
     }
 
-    // 議事録を履歴に保存
-    saveToHistory();
-
-    // キーワードセット：文字起こしに出現した単語のスコア+1
-    if (selectedKeywordSetId && selectedKeywordCompany && state.transcript) {
-      incrementKeytermScores(selectedKeywordCompany, selectedKeywordSetId, state.transcript);
-    }
-
-    // パネル3の単語登録エリア更新
-    updateKeywordRegisterArea();
+    // 以降で例外が出ても結果画面には必ず進む
+    try {
+      // 議事録を履歴に保存
+      saveToHistory();
+    } catch(e) { console.error(e); showToast('履歴の保存に失敗しました（保存容量の不足など）'); }
+    try {
+      // キーワードセット：文字起こしに出現した単語のスコア+1
+      if (selectedKeywordSetId && selectedKeywordCompany && state.transcript) {
+        incrementKeytermScores(selectedKeywordCompany, selectedKeywordSetId, state.transcript);
+      }
+      // パネル3の単語登録エリア更新
+      updateKeywordRegisterArea();
+    } catch(e) { console.error(e); }
 
     setStep(3);
   }, 400);
@@ -3308,6 +3304,8 @@ document.getElementById('startBtn').addEventListener('click', async () => {
   document.getElementById('retryClaudeBtn').style.display     = 'none';
   document.getElementById('backBtn').style.display            = 'none';
   state.chatHistory = [];
+  state.transcript  = ''; // 前回の文字起こしが「再試行」に使われないようクリア
+  state.minutes     = '';
   const tStart    = Date.now();
   const sizeMB    = state.file ? state.file.size / 1024 / 1024 : 0;
   const svc       = getSttService();
@@ -3321,9 +3319,9 @@ document.getElementById('startBtn').addEventListener('click', async () => {
     // テキストファイルの場合：文字起こしスキップ
     if (state.textFile) {
       state.transcript = state.textFile;
-      const { text, usage } = await generateMinutes(state.transcript, 1, 1);
+      const { text, usage, truncated } = await generateMinutes(state.transcript, 1, 1);
       state.minutes = text;
-      finishProcessing(tStart, 0, false, usage);
+      finishProcessing(tStart, 0, false, usage, truncated);
       return;
     }
     // タイマー安全クリア用ラッパー
@@ -3373,9 +3371,9 @@ document.getElementById('startBtn').addEventListener('click', async () => {
     }
 
     state.transcript = transcriptText;
-    const { text, usage } = await generateMinutes(state.transcript, 2, 2);
+    const { text, usage, truncated } = await generateMinutes(state.transcript, 2, 2);
     state.minutes = text;
-    finishProcessing(tStart, sizeMB, usedDeepgram, usage);
+    finishProcessing(tStart, sizeMB, usedDeepgram, usage, truncated);
 
   } catch(err) {
     console.error(err);
@@ -3400,9 +3398,9 @@ document.getElementById('retryClaudeBtn').addEventListener('click', async () => 
   const tStart = Date.now();
   Busy.start();
   try {
-    const { text, usage } = await generateMinutes(state.transcript, 1, 1);
+    const { text, usage, truncated } = await generateMinutes(state.transcript, 1, 1);
     state.minutes = text;
-    finishProcessing(tStart, 0, false, usage);
+    finishProcessing(tStart, 0, false, usage, truncated);
   } catch(err) {
     const _m = busyErrorMessage(err);
     Busy.end(false);
@@ -3425,13 +3423,17 @@ document.getElementById('backBtn').addEventListener('click',()=>{
 });
 
 // ─── Claude往復チャット ──────────────────────
-function addChatBubble(role, text) {
+// 編集中の内容を確定扱いにして state.minutes に取り込む（チャット・修正の前に呼ぶ）
+function commitEditingMinutes() {
+  if (typeof isEditing !== 'undefined' && isEditing) state.minutes = document.getElementById('minutesEdit').value;
+}
+function addChatBubble(role, text, noApply) {
   const history = document.getElementById('chatHistory');
   const bubble  = document.createElement('div');
   bubble.className = 'chat-bubble ' + role;
   // textContentではなくテキストノードを使う（子要素追加のため）
   bubble.appendChild(document.createTextNode(text));
-  if (role === 'assistant') {
+  if (role === 'assistant' && !noApply) {
     const br = document.createElement('br');
     const applyBtn = document.createElement('button');
     applyBtn.className   = 'apply-btn';
@@ -3465,6 +3467,7 @@ async function sendChatMessage() {
   input.disabled = true;
   document.getElementById('chatSendBtn').disabled = true;
 
+  commitEditingMinutes();
   addChatBubble('user', msg);
   state.chatHistory.push({ role: 'user', content: msg });
 
@@ -3493,15 +3496,18 @@ async function sendChatMessage() {
     });
     if (!cr.ok) { const e=await cr.json().catch(()=>({})); throw new Error('Claude APIエラー: '+(e?.error?.message||cr.status)); }
     const cd    = await cr.json();
-    const reply = extractClaudeText(cd) || '（応答なし）';
+    const reply = extractClaudeText(cd);
+    if (!reply) throw new Error('応答にテキストがありません（stop_reason: ' + (cd.stop_reason || '不明') + '）');
 
     state.chatHistory.push({ role: 'assistant', content: reply });
     loadingEl.remove();
-    addChatBubble('assistant', reply);
+    addChatBubble('assistant', reply, cd.stop_reason === 'max_tokens');
+    if (cd.stop_reason === 'max_tokens') showToast('応答が途中で切れたため「反映」は無効にしました');
 
   } catch(err) {
     loadingEl.remove();
-    addChatBubble('assistant', '❌ エラー: ' + err.message);
+    state.chatHistory.pop(); // 失敗した質問は履歴から外す（次回の送信でuserが連続しないように）
+    addChatBubble('assistant', '❌ エラー: ' + err.message, true);
   } finally {
     input.disabled = false;
     document.getElementById('chatSendBtn').disabled = false;
@@ -3586,9 +3592,9 @@ function renderHistoryList() {
     const card = document.createElement('div');
     card.style.cssText = 'background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;padding-right:44px;cursor:pointer;';
     card.innerHTML = `
-      <div style="font-size:12px;color:var(--text-muted);">${entry.datetime}</div>
-      <div style="font-size:14px;font-weight:600;color:var(--text);margin:2px 0;">${entry.topic||'打合せ'}</div>
-      <div style="font-size:12px;color:var(--accent2);">${entry.customer||''}</div>`;
+      <div style="font-size:12px;color:var(--text-muted);">${escapeHtml(entry.datetime)}</div>
+      <div style="font-size:14px;font-weight:600;color:var(--text);margin:2px 0;">${escapeHtml(entry.topic||'打合せ')}</div>
+      <div style="font-size:12px;color:var(--accent2);">${escapeHtml(entry.customer||'')}</div>`;
     card.addEventListener('click', () => showHistoryDetail(entry));
     const delBtn = document.createElement('button');
     delBtn.textContent = '✕';
@@ -3688,6 +3694,7 @@ document.getElementById('resetBtn').addEventListener('click',()=>{
   document.getElementById('fileSize').innerHTML='';
   document.getElementById('textFileName').textContent='';
   document.getElementById('meetingTopic').value='';
+  refFiles.length = 0; renderRefFileList(); // 前回の打合せ資料が次の議事録に混ざらないように
   clearError('fileError'); clearError('processError');
   setupDateTime(); setStep(1); updateStartBtn();
 });
@@ -3885,7 +3892,7 @@ try {
     btn.disabled = true;
     btn.textContent = '修正中...';
     try {
-      const inp   = document.getElementById('keywordRegisterInput');
+      commitEditingMinutes();
       const entry = getKeywordSets().find(e => e.company === selectedKeywordCompany);
       const set   = entry?.sets.find(s => s.id === selectedKeywordSetId);
       const words = set ? set.words.map(w => w.word).join('、') : '';
@@ -3907,10 +3914,12 @@ ${state.minutes}
         headers: { 'Content-Type':'application/json', 'x-api-key':getAnthropicKey(), 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' },
         body: JSON.stringify({ model:CLAUDE_MODEL, max_tokens: getMaxTokens(), output_config:{ effort:getClaudeEffort() }, messages:[{role:'user',content:prompt}] }),
       });
-      if (!cr.ok) throw new Error('APIエラー');
+      if (!cr.ok) { const e = await cr.json().catch(() => ({})); throw new Error('APIエラー ' + (e?.error?.message || cr.status)); }
       const cd = await cr.json();
       const fixed = extractClaudeText(cd);
-      if (fixed) {
+      if (cd.stop_reason === 'max_tokens') throw new Error('出力が上限で途中切れのため反映しませんでした（最大トークン数を増やしてください）');
+      if (!fixed) throw new Error('応答にテキストがありません（stop_reason: ' + (cd.stop_reason || '不明') + '）');
+      {
         state.minutes = fixed;
         document.getElementById('minutesResult').textContent = fixed;
         document.getElementById('minutesEdit').value = fixed;
